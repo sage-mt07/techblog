@@ -1,6 +1,7 @@
 ---
-title: "Page 1"
-layout: default
+layout: page
+title: "PAGE-TITLE"
+permalink: /URL-PATH
 ---
 # .NET 8から.NET Framework 4.5.1のCOMコンポーネントを利用する方法
 
