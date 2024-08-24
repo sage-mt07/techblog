@@ -42,8 +42,7 @@ C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regasm.exe MyComComponent.dll /c
 ### ステップ 2: COMオブジェクトを作成して呼び出す
 以下のコード例では、Marshal.GetActiveObjectメソッドを使用して、COMコンポーネントのインスタンスを取得し、メソッドを呼び出しています。
 
-csharp
-コードをコピーする
+``` csharp コードをコピーする
 using System;
 using System.Runtime.InteropServices;
 
@@ -60,6 +59,7 @@ namespace Net8ComExample
         }
     }
 }
+```
 ## 3. キーコンテナ一覧の取得 (オプション)
 場合によっては、.NET 8のコードから使用する暗号化のためのキーコンテナ一覧を取得したいことがあります。この場合、certutilコマンドやPowerShellを使用して、利用可能なキーコンテナの一覧を取得します。
 
