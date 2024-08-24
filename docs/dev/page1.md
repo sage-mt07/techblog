@@ -27,9 +27,10 @@ Visual Studioでプロジェクトのプロパティを開き、「ビルド」�
 ステップ 3: COMとしてDLLをレジストリに登録
 作成したDLLをCOMとして使用するには、regasmツールを使用してDLLをレジストリに登録します。64ビットの環境で64ビットのCOMとして登録する場合、次のコマンドを使用します。
 
-cmd
-コードをコピーする
-`C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regasm.exe MyComComponent.dll /codebase`
+```cmd コードをコピーする
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regasm.exe MyComComponent.dll /codebase
+```
+
 これで、COMコンポーネントが64ビットのレジストリに登録され、64ビットのアプリケーションから使用できるようになります。
 
 ## 2. .NET 8からCOMコンポーネントを呼び出す
