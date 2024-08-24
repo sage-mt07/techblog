@@ -29,7 +29,7 @@ Visual Studioでプロジェクトのプロパティを開き、「ビルド」�
 
 cmd
 コードをコピーする
-C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regasm.exe MyComComponent.dll /codebase
+`C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regasm.exe MyComComponent.dll /codebase`
 これで、COMコンポーネントが64ビットのレジストリに登録され、64ビットのアプリケーションから使用できるようになります。
 
 ## 2. .NET 8からCOMコンポーネントを呼び出す
