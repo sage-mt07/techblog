@@ -1,6 +1,6 @@
 ---
-title: Welcome to My Site
-description: This is the home page of my awesome GitHub Pages site.
+title: Welcome to My Tech Blog
+layout: default
 ---
 
 # Welcome to My Site
