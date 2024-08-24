@@ -1,6 +1,3 @@
----
-layout: default
----
 
 # .NET 8から.NET Framework 4.5.1のCOMコンポーネントを利用する方法
 
