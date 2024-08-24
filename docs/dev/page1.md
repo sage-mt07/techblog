@@ -1,4 +1,7 @@
-
+---
+title: "Page 1"
+layout: default
+---
 # .NET 8から.NET Framework 4.5.1のCOMコンポーネントを利用する方法
 
 ## 1. .NET Framework 4.5.1でCOMコンポーネントを作成
