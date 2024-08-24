@@ -1,6 +1,7 @@
 ---
-title: "First Post"
-date: 2024-08-24
+layout: page
+title: "My First Post"
+permalink: /URL-PATH
 ---
 
 # My First Post
