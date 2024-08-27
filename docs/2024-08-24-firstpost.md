@@ -1,11 +1,3 @@
-# サービスの一覧とその依存関係を定義
-$services = @{
-    "serviceA" = @()          # serviceAは依存関係なし
-    "serviceB" = @("serviceA") # serviceBはserviceAに依存
-    "serviceC" = @()          # serviceCは依存関係なし
-    "serviceD" = @("serviceB") # serviceDはserviceBに依存
-}
-
 # C:\RELEASE フォルダ内のすべての .yaml ファイルを取得
 $releaseFolder = "C:\RELEASE"
 $yamlFiles = Get-ChildItem -Path $releaseFolder -Filter *.yaml
@@ -16,10 +8,43 @@ if ($yamlFiles.Count -eq 0) {
     exit 1
 }
 
-# 依存関係がないサービスをリストアップ
-$noDependencyServices = $services.GetEnumerator() | Where-Object { $_.Value.Count -eq 0 } | ForEach-Object { $_.Key }
-# 依存関係があるサービスをリストアップ
-$dependentServices = $services.GetEnumerator() | Where-Object { $_.Value.Count -gt 0 } | ForEach-Object { $_.Key }
+# 正規表現でファイル名からサービス名と名前空間を抽出
+function Parse-ServiceName {
+    param (
+        [string]$fileName
+    )
+    
+    if ($fileName -match '^(?<ServiceName>[^_]+)_(?<Namespace>[^_]+)_\d{8}\d{2}\.yaml$') {
+        return $matches['ServiceName']
+    }
+    return $null
+}
+
+# サービス名ごとに分類
+$services = @{}
+foreach ($yamlFile in $yamlFiles) {
+    $serviceName = Parse-ServiceName $yamlFile.Name
+    if ($serviceName) {
+        if (-not $services.ContainsKey($serviceName)) {
+            $services[$serviceName] = @()  # 依存関係の初期化
+        }
+    } else {
+        Write-Host "YAML file $($yamlFile.Name) does not match expected naming convention. Skipping."
+    }
+}
+
+# 依存関係がないサービスと依存関係があるサービスを分類
+$noDependencyServices = @()
+$dependentServices = @()
+
+foreach ($service in $services.Keys) {
+    $dependencies = $services[$service]
+    if ($dependencies.Count -eq 0) {
+        $noDependencyServices += $service
+    } else {
+        $dependentServices += $service
+    }
+}
 
 # 並列で起動するための関数
 function Start-ServicePodsInParallel {
@@ -28,7 +53,7 @@ function Start-ServicePodsInParallel {
     )
 
     foreach ($serviceName in $serviceNames) {
-        $yamlFile = $yamlFiles | Where-Object { $_.Name -eq "$serviceName.yaml" }
+        $yamlFile = $yamlFiles | Where-Object { Parse-ServiceName($_.Name) -eq $serviceName }
         if ($yamlFile) {
             Start-Job -ScriptBlock {
                 Write-Host "Starting $using:serviceName using $using:yamlFile.FullName..."
@@ -47,13 +72,8 @@ function Start-ServicePods {
         [string]$serviceName
     )
 
-    # サービスに依存するサービスがあれば、まずそれらを起動
-    foreach ($dependency in $services[$serviceName]) {
-        Start-ServicePods -serviceName $dependency
-    }
-
     # サービスの YAML ファイルを探す
-    $yamlFile = $yamlFiles | Where-Object { $_.Name -eq "$serviceName.yaml" }
+    $yamlFile = $yamlFiles | Where-Object { Parse-ServiceName($_.Name) -eq $serviceName }
     if ($yamlFile) {
         # サービスのPodを起動
         Write-Host "Starting $serviceName using $yamlFile.FullName..."
