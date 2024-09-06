@@ -4,8 +4,6 @@
 
 このファイルは、c:\batch\config.bat に配置されていると仮定します。
 ```
-batch
-コードをコピーする
 :: config.bat
 set MY_VAR1=value1
 set MY_VAR2=value2
@@ -17,8 +15,6 @@ set MY_VAR3=value3
 main.bat ファイルでは、スクリプトのディレクトリを取得して、そのディレクトリを基準に config.bat を読み込みます。
 
 ```
-batch
-コードをコピーする
 :: main.bat
 @echo off
 
