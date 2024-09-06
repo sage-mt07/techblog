@@ -22,9 +22,15 @@ RUN if grep -q "old_string" /tmp/sample.txt; then \
 # 結果を確認
 
 RUN cat /tmp/sample.txt
+
 Dockerfileの流れ
+
 FROM alpine:3.12: Alpine Linuxの軽量ベースイメージを使用します。
+
 RUN apk add --no-cache bash sed: bash と sed コマンドをインストールします。
+
 RUN echo "old_string" > /tmp/sample.txt: テスト用にファイルを作成し、old_stringを含む文字列を追加します。
+
 RUN if ... fi: sedを使って、ファイルにold_stringがあればnew_stringに置き換え、なければnew_stringを追加します。
+
 RUN cat /tmp/sample.txt: 結果を確認するためにファイル内容を表示します。
