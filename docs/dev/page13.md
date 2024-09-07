@@ -43,9 +43,10 @@ public static class SqlCommandExtensions
             
             var completedTask = await Task.WhenAny(sqlTask, delayTask);
 
-            // タイムアウトが発生した場合
-            if (completedTask == delayTask)
+            // タスクがタイムアウトした場合
+            if (sqlTask.IsCompletedSuccessfully == false)
             {
+                command.Cancel(); // SQL Server側のクエリをキャンセル
                 throw new TimeoutException($"SQL command timed out after {millisecondsTimeout} ms.");
             }
             
