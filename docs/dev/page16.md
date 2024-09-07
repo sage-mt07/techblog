@@ -104,15 +104,21 @@ steps:
     git push origin version-update-$(Build.BuildId)
   displayName: '変更を新しいブランチにコミット'
 
-# バージョン更新のプルリクエストを自動作成
+# プルリクエストを自動作成し、マージを自動化
 - task: AzureCLI@2
   inputs:
     azureSubscription: 'YourAzureSubscription'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
-      az repos pr create --repository $(Build.Repository.Name) --source-branch version-update-$(Build.BuildId) --target-branch $(Build.SourceBranchName) --title "自動バージョン更新 $(version)" --description "パッケージ参照をバージョン $(version) に更新しました。" --auto-complete
-  displayName: 'バージョン更新用のプルリクエストを作成'
+      # プルリクエストを作成して自動マージ
+      az repos pr create --repository $(Build.Repository.Name) \
+        --source-branch version-update-$(Build.BuildId) \
+        --target-branch $(Build.SourceBranchName) \
+        --title "自動バージョン更新 $(version)" \
+        --description "パッケージ参照をバージョン $(version) に更新しました。" \
+        --auto-complete  # 自動でマージ
+  displayName: 'バージョン更新用のプルリクエストを作成し、マージを自動化'
 
 # ビルド成果物の公開
 - task: PublishBuildArtifacts@1
