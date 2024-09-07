@@ -18,8 +18,7 @@ HttpClientを再作成することが一つの解決策ではありますが、�
 4.1 PooledConnectionLifetime の設定を利用
 HttpClientの接続プールを定期的にリフレッシュするために、PooledConnectionLifetimeを設定します。この設定により、一定時間が経過すると古い接続が再作成され、DNS情報がリフレッシュされます。
 
-```csharp
-コードをコピーする
+```csharp コードをコピーする
 var httpClientHandler = new SocketsHttpHandler
 {
     PooledConnectionLifetime = TimeSpan.FromMinutes(2) // 2分間で接続をリフレッシュ
@@ -35,8 +34,7 @@ var httpClient = new HttpClient(httpClientHandler)
 4.2 HttpClientFactory の利用
 .NETにはHttpClientFactoryが用意されており、これを利用することで、HttpClientのインスタンス管理が効率的に行われます。HttpClientFactoryは、接続プールの管理やDNSキャッシュの更新も自動的に処理するため、特にKubernetes環境でのgRPC通信において有効です。
 
-```csharp
-コードをコピーする
+```csharp コードをコピーする
 public class GrpcServiceClient
 {
     private readonly IHttpClientFactory _httpClientFactory;
@@ -66,8 +64,7 @@ public class GrpcServiceClient
 4.3 再作成を時間ベースで制御
 HttpClientを頻繁に再作成しないように、作成から一定の時間が経過した場合にのみ再作成するロジックを組み込みます。これにより、適切なタイミングでのみ再作成を行うことができ、不要な再作成を防ぎます。
 
-```csharp
-コードをコピーする
+```csharp コードをコピーする
 public class GrpcServiceClient
 {
     private HttpClient httpClient;
@@ -113,9 +110,7 @@ public class GrpcServiceClient
 4.4 エラーベースの再作成
 通信エラーが発生した場合のみHttpClientを再作成する戦略です。一定回数リトライしても通信が回復しない場合に、キャッシュされた古い接続をクリアするためにHttpClientを再作成します。
 
-```
-csharp
-コードをコピーする
+``` csharp コードをコピーする 
 public async Task<string> CallGrpcServiceWithRetryAsync(string serviceUrl)
 {
     int retryCount = 0;
