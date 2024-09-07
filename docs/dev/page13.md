@@ -33,25 +33,39 @@ public static class SqlCommandExtensions
     /// <returns>タスクの結果</returns>
     public static async Task<int> ExecuteWithTimeoutAsync(this SqlCommand command, int millisecondsTimeout)
     {
-        using (var cts = new CancellationTokenSource())
+         using (var cts = new CancellationTokenSource())
         {
-            // タイムアウトを設定
-            cts.CancelAfter(millisecondsTimeout);
-            
-            var sqlTask = command.ExecuteNonQueryAsync(cts.Token);
-            var delayTask = Task.Delay(millisecondsTimeout);
-            
-            var completedTask = await Task.WhenAny(sqlTask, delayTask);
-
-            // タスクがタイムアウトした場合
-            if (sqlTask.IsCompletedSuccessfully == false)
+            try
             {
-                command.Cancel(); // SQL Server側のクエリをキャンセル
+                // タイムアウトを設定
+                cts.CancelAfter(millisecondsTimeout);
+
+                // SQLコマンドの非同期実行
+                var sqlTask = command.ExecuteNonQueryAsync(cts.Token);
+
+                // タイムアウト時間に達するまで待機
+                await Task.WhenAny(sqlTask, Task.Delay(millisecondsTimeout, cts.Token));
+
+                // タスクがタイムアウトした場合
+                if (sqlTask.IsCompletedSuccessfully == false)
+                {
+                    command.Cancel(); // SQL Server側のクエリをキャンセル
+                    throw new TimeoutException($"SQL command timed out after {millisecondsTimeout} ms.");
+                }
+
+                return await sqlTask; // クエリが正常に完了した場合
+            }
+            catch (OperationCanceledException)
+            {
+                // SQLコマンドのキャンセル
+                command.Cancel();
                 throw new TimeoutException($"SQL command timed out after {millisecondsTimeout} ms.");
             }
-            
-            // SQLコマンドが完了した場合
-            return await sqlTask;
+            catch (SqlException ex)
+            {
+                // SQLのエラーが発生した場合の処理
+                throw new Exception($"SQL error: {ex.Message}", ex);
+            }
         }
     }
 }
