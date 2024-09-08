@@ -18,6 +18,7 @@ Dapperを使用してストアドプロシージャ（SP）を呼び出す際に
 DapperのExecuteAsyncやQueryAsync、その他のメソッドを解析対象とする。
 メソッド呼び出しから、クラス名、メソッド名、SP名、タイムアウト値を抽出する。
 結果をMarkdown形式で出力し、プロジェクトごとのファイル名で保存する。
+
 解析ツールの主要コード
 ```csharp コードをコピーする
 // RoslynベースのDapper解析ツールの例（Program.cs）
@@ -144,6 +145,6 @@ steps:
     PathtoPublish: '$(projectName)_stored_procedures.md'
     ArtifactName: 'StoredProcedures'
 ```
-## 2.2 ツールの実行と結果の確認
+### 2.2 ツールの実行と結果の確認
 
 パイプラインが実行されると、ArtifactsからStoredProcedureAnalyzerツールがダウンロードされ、指定されたプロジェクトのソースコードを解析してストアドプロシージャの一覧をMarkdownファイルとして出力します。そのファイルは自動的にAzure DevOps Wikiに投稿されます。
