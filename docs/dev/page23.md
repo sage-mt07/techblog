@@ -16,6 +16,7 @@ IHostedServiceの使用方法
 - 初期化処理: サービス開始時に初期化処理を行います。
 - メイン処理: 初期化が完了した後に、メイン処理を開始します。
 - 正常終了: サービス終了時にメイン処理をキャンセルし、リソースを解放します。
+
 実装例
 ```csharp コードをコピーする
 using Microsoft.Extensions.Hosting;
@@ -89,6 +90,7 @@ public class CustomHostedService : IHostedService, IDisposable
 }
 ```
 Program.csでの登録
+
 このカスタムホストサービスを利用するためには、Program.csでDI（依存性注入）コンテナに登録する必要があります。
 
 ```csharp コードをコピーする
