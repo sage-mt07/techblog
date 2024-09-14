@@ -73,48 +73,50 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
    ```powershell
    # File: Scripts/PackageUtils.psm1
    
-   function Get-PackageInfoFromNupkg {
-       param (
-           [Parameter(Mandatory = $true)]
-           [string]$NupkgPath
-       )
-   
-       if (-not (Test-Path $NupkgPath)) {
-           Write-Error "指定された .nupkg ファイルが存在しません: $NupkgPath"
-           return $null
-       }
-   
-       # 一時ディレクトリを作成
-       $tempDir = New-TemporaryFile | Remove-Item -Force -Confirm:$false -ErrorAction SilentlyContinue
-       $tempDir = Split-Path $tempDir
-       New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-   
-       try {
-           # .nupkgファイルを解凍
-           Expand-Archive -Path $NupkgPath -DestinationPath $tempDir -Force
-   
-           # 解凍先から .nuspec ファイルを検索
-           $nuspecFile = Get-ChildItem -Path $tempDir -Recurse -Filter *.nuspec | Select-Object -First 1
-   
-           if ($null -eq $nuspecFile) {
-               Write-Error ".nupkg ファイル内に .nuspec ファイルが見つかりませんでした。"
-               return $null
-           }
-   
-           # .nuspecファイルをXMLとして読み込む
-           [xml]$nuspecContent = Get-Content $nuspecFile.FullName
-   
-           # パッケージ名とバージョンを取得
-           $packageName = $nuspecContent.package.metadata.id
-           $packageVersion = $nuspecContent.package.metadata.version
-   
-           return @{ Name = $packageName; Version = $packageVersion }
-       }
-       finally {
-           # 一時ディレクトリを削除
-           Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-       }
-   }
+    function Get-PackageInfoFromNupkg {
+        param (
+            [Parameter(Mandatory = $true)]
+            [string]$Path
+        )
+
+        if (-not (Test-Path $Path)) {
+            Write-Error "指定された .nupkg ファイルが存在しません: $Path"
+            return $null
+        }
+
+        # 一時ディレクトリを作成
+        Write-Host "一時ディレクトリを作成1"
+        $newdir = (New-Guid).Guid
+        $tempDir =New-Item -Path $env:AGENT_TEMPDIRECTORY -Name $newdir -ItemType "directory"
+        Write-Host "一時ディレクトリを作成2 $tempDir"
+
+        try {
+            # .nupkgファイルを解凍
+            Expand-Archive -Path $Path -DestinationPath $tempDir -Force
+
+            # 解凍先から .nuspec ファイルを検索
+            $nuspecFile = Get-ChildItem -Path $tempDir -Recurse -Filter *.nuspec | Select-Object -First 1
+
+            if ($null -eq $nuspecFile) {
+                Write-Error ".nupkg ファイル内に .nuspec ファイルが見つかりませんでした。"
+                return $null
+            }
+
+            # .nuspecファイルをXMLとして読み込む
+            [xml]$nuspecContent = Get-Content $nuspecFile.FullName
+
+            # パッケージ名とバージョンを取得
+            $packageName = $nuspecContent.package.metadata.id
+            $packageVersion = $nuspecContent.package.metadata.version
+
+            return @{ Name = $packageName; Version = $packageVersion }
+        }
+        finally {
+            # 一時ディレクトリを削除
+            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
    ```
    ## PowerShellスクリプトの作成
 
@@ -128,8 +130,6 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
     # File: Scripts/UpdatePackageReferences.ps1
 
     param (
-        [Parameter(Mandatory = $true)]
-        [string]$ProjectPath,
 
         [Parameter(Mandatory = $true)]
         [string]$SolutionPath,
@@ -157,6 +157,7 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
     Write-Host "組織名: $organization"
     Write-Host "プロジェクト名: $project"
     Write-Host "リポジトリID: $repositoryId"
+    Write-Host "PackageOutputDir: $PackageOutputDir"
 
     # === 2. .nupkg ファイルの取得 ===
 
@@ -167,13 +168,13 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
         Write-Error ".nupkg ファイルが生成されていません。nuget pack が成功したか確認してください。"
         exit 1
     }
-
-    Write-Host "最新の .nupkg ファイル: $($latestNupkg.FullName)"
+    $latestNupkgPath=$latestNupkg.FullName
+    Write-Host "最新の .nupkg ファイル: $($latestNupkgPath)"
 
     # === 3. PowerShellモジュールのインポート ===
 
     # モジュールのパス（スクリプトと同じディレクトリに配置）
-    $modulePath = "$PSScriptRoot\PackageUtils.psm1"
+    $modulePath = "$PSScriptRoot/packageUtils.psm1"
 
     if (-not (Test-Path $modulePath)) {
         Write-Error "モジュールファイルが見つかりません: $modulePath"
@@ -184,7 +185,10 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
 
     # === 4. パッケージ情報の取得 ===
 
-    $packageInfo = Get-PackageInfoFromNupkg -NupkgPath $latestNupkg.FullName
+    Write-Host "最新の .nupkg ファイル: $($latestNupkgPath)"
+
+
+    $packageInfo = Get-PackageInfoFromNupkg -Path $latestNupkgPath
 
     if ($null -eq $packageInfo) {
         Write-Error "パッケージ情報の取得に失敗しました。"
@@ -200,7 +204,7 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
     # === 5. 他の .csproj ファイルの更新 ===
 
     # 更新対象の .csproj ファイルを取得（自分自身のプロジェクトを除外）
-    $csprojFiles = Get-ChildItem -Path . -Recurse -Filter *.csproj | Where-Object { $_.FullName -ne (Resolve-Path $ProjectPath) }
+    $csprojFiles = Get-ChildItem -Path . -Recurse -Filter *.csproj 
 
     # プロジェクトファイルの更新
     foreach ($file in $csprojFiles) {
@@ -221,45 +225,50 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
         }
     }
 
-    # === 6. ビルドの実行 ===
-
-    dotnet build $SolutionPath
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "ビルドに失敗しました。プルリクエストの作成を中止します。"
-        exit 1
-    }
 
     # === 7. Git の設定とコミット ===
 
+    $buildId=$env:BUILD_BUILDID
     git config user.email "build@yourdomain.com"
     git config user.name "Build Agent"
 
     # 新しいブランチの作成と変更のコミット
-    $branchName = "pullrequests/update-package-version-$(Build.BuildId)"
+    $branchName = "pr/update-package-version-$buildId"
     git checkout -b $branchName
     git add **/*.csproj
     git commit -m "Update package references to $packageName $packageVersion"
 
-    # === 8. 変更のプッシュ ===
-    git push origin $branchName
+    Write-Host "git commit"
 
-    # === 9. プルリクエストの作成 ===
-    ## 環境変数から System.AccessToken を取得
+    # === 8. 変更のプッシュ ===
+    # 環境変数から System.AccessToken を取得
     $accessToken = $env:SYSTEM_ACCESSTOKEN
 
-    ## 認証ヘッダーの作成（Bearer 認証を使用）
+    # git remote set-url origin https://$AccessToken@dev.azure.com/$organization/$project/_git/$repositoryId
+
+    git push origin $branchName
+
+    Write-Host "git push"
+
+
+    # === 9. プルリクエストの作成 ===
+
+
+    # 認証ヘッダーの作成（Bearer 認証を使用）
     $headers = @{
         Authorization = "Bearer $accessToken"
-        Content-Type = "application/json"
+        "Content-Type" = "application/json"
     }
-    ## ビルドサービスアカウントの ID を取得$profileUrl = "https://vssps.dev.azure.com/$organization/_apis/connectionData?connectOptions=none&lastChangeId=-1&lastChangeId64=-1"
+
+    # ビルドサービスアカウントの ID を取得
+    $profileUrl = "https://vssps.dev.azure.com/$organization/_apis/connectionData?connectOptions=none&lastChangeId=-1&lastChangeId64=-1"
     $profileResponse = Invoke-RestMethod -Method Get -Uri $profileUrl -Headers $headers
     $buildServiceAccountId = $profileResponse.authenticatedUser.id
 
-    ## ビルド対象ブランチを取得
+    # ビルド対象ブランチを取得
     $targetBranch = $env:BUILD_SOURCEBRANCH
 
-    ## プルリクエストの作成に POST を使用
+    # プルリクエストの作成に POST を使用
     $prUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests?api-version=6.0"
 
     $body = @{
@@ -270,11 +279,16 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
         reviewers = @()
     } | ConvertTo-Json
 
+    Write-Host "request $prUrl"
+    Write-Host "body $body"
+
     $response = Invoke-RestMethod -Method Post -Uri $prUrl -Headers $headers -Body $body
+
+    Write-Host "response $response"
 
     Write-Host "プルリクエストを作成しました。PR ID: $($response.pullRequestId)"
 
-    ## プルリクエストの自動完了設定に PATCH を使用
+    # プルリクエストの自動完了設定に PATCH を使用
     $prUpdateUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests/$($response.pullRequestId)?api-version=6.0"
 
     $prUpdateBody = @{
@@ -286,6 +300,7 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
     Invoke-RestMethod -Method Patch -Uri $prUpdateUrl -Headers $headers -Body $prUpdateBody
 
     Write-Host "プルリクエストに自動完了設定を適用しました。"
+
     ```
 
     変更点:
