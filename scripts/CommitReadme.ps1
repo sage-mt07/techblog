@@ -17,14 +17,14 @@ $hasChanges = git status --porcelain
 
 if ($hasChanges) {
     # 変更を追加
-    git add "$ProjectDirectory/readme.md"
+    git add "$ProjectDirectory/package.md"
 
     # コミット
-    git commit -m "Update readme.md with latest package versions for $(Split-Path -Leaf $ProjectDirectory)"
+    git commit -m "Update package.md with latest package versions for $(Split-Path -Leaf $ProjectDirectory)"
 
     # 新しいブランチを作成してプッシュ
     git checkout -b "$BranchName"
     git push origin "$BranchName"
 } else {
-    Write-Host "No changes detected in readme.md for $ProjectDirectory."
+    Write-Host "No changes detected in package.md for $ProjectDirectory."
 }

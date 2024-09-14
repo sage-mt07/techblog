@@ -42,7 +42,7 @@ foreach ($csproj in $csprojFiles) {
         }
     }
 
-    # readme.mdの内容を生成
+    # package.mdの内容を生成
     $readmeContent = @"
 # Package Versions for $(($csproj.BaseName))
 
@@ -54,9 +54,9 @@ foreach ($csproj in $csprojFiles) {
         $readmeContent += "| $($pkg.Package) | $($pkg.CurrentVersion) | $($pkg.LatestVersion) |\n"
     }
 
-    # readme.mdに書き出す
-    $readmePath = Join-Path -Path $ProjectDirectory -ChildPath "readme.md"
+    # package.mdに書き出す
+    $readmePath = Join-Path -Path $ProjectDirectory -ChildPath "package.md"
     $readmeContent | Out-File -FilePath $readmePath -Encoding UTF8
 
-    Write-Host "Generated readme.md at $readmePath"
+    Write-Host "Generated package.md at $readmePath"
 }
