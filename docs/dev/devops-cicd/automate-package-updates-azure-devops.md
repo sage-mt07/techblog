@@ -298,91 +298,7 @@ $body = @{
 
 targetRefName の動的設定: プルリクエストのターゲットブランチを固定の "refs/heads/main" から、ビルド変数 Build.SourceBranch を使用して動的に設定するように変更しました。これにより、ビルド対象ブランチに応じてプルリクエストのターゲットブランチが自動的に設定され、スクリプトの汎用性が向上します。
 
-## パイプラインタスクの設定
 
-Azure DevOpsのClassic Editorを使用して、パイプラインに必要なタスクを追加します。以下の手順で設定を行います。
-
-### 1. パイプラインの編集を開始
-
-1. **Azure DevOpsにサインイン**:
-   [Azure DevOps](https://dev.azure.com/)にアクセスし、対象のプロジェクトに移動します。
-
-2. **パイプラインに移動**:
-   左側のナビゲーションバーから「**Pipelines（パイプライン）**」を選択し、編集したいクラシックパイプラインを選びます。
-
-3. **パイプラインの編集**:
-   該当パイプラインの右側にある「**Edit（編集）**」ボタンをクリックします。
-
-### 2. 変数の設定
-
-1. **変数タブを開く**:
-   パイプライン編集画面の上部にある「**Variables（変数）**」タブをクリックします。
-
-2. **変数の追加**:
-   以下の変数を追加します。必要に応じて「**Keep this value secret（この値を秘密にする）**」を有効にします。
-
-   | 変数名          | 値                                      | 説明                                     |
-   |-----------------|-----------------------------------------|------------------------------------------|
-   | `ORGANIZATION`  | `your_organization`                     | Azure DevOpsの組織名（例: `myOrg`）        |
-   | `PROJECT`       | `your_project`                          | Azure DevOpsのプロジェクト名（例: `myProject`） |
-   | `REPOSITORY_ID` | `your_repository_id`                    | リポジトリのID（後述の取得方法を参照）     |
-   | `TARGET_BRANCH` | `refs/heads/main` または `refs/heads/develop` など | プルリクエストのターゲットブランチ名      |
-
-### 3. エージェントジョブの設定変更
-
-1. **ジョブの詳細設定**:
-   パイプライン編集画面で、ジョブ名（例: **Agent job 1**）をクリックして詳細設定を表示します。
-
-2. **OAuthトークンへのアクセス許可**:
-   「**Additional options（追加オプション）**」セクション内にある「**Allow scripts to access the OAuth token**」チェックボックスをオンにします。
-
-   ![Allow scripts to access the OAuth token](https://learn.microsoft.com/ja-jp/azure/devops/pipelines/repos/github/media/connect-to-github/allow-scripts-to-access-the-oauth-token.png?view=azure-devops)
-
-   これにより、スクリプト内で `System.AccessToken` を利用してAzure DevOpsのREST APIやGit操作を認証できるようになります。
-
-### 4. PowerShellタスクの追加
-
-1. **PowerShellタスクの追加**:
-   ジョブ内で「**+**」ボタンをクリックし、「**PowerShell**」タスクを選択して追加します。
-
-2. **PowerShellスクリプトの設定**:
-   - **タイプ**: `File Path` を選択。
-   - **スクリプトファイル**: `Scripts\UpdatePackageReferences.ps1` を指定。
-   - **Arguments**: 以下のようにパラメータを渡します。
-     ```plaintext
-     -ProjectPath "Path\To\Your\Project.csproj" -SolutionPath "Path\To\Your\Solution.sln" -PackageOutputDir "Output\Packages"
-     ```
-     ここで、`Path\To\Your\Project.csproj` および `Path\To\Your\Solution.sln` は実際のプロジェクトとソリューションのパスに置き換えてください。
-
-   - **オプション設定**:
-     - 「**Options（オプション）**」タブで「**Allow scripts to access the OAuth token**」が有効になっていることを確認します。
-
-   ![PowerShell Task Settings](https://learn.microsoft.com/ja-jp/azure/devops/pipelines/tasks/media/utility/powershell/powershell-task-settings.png)
-
-3. **保存と実行**:
-   - 「**Save**」をクリックしてパイプラインを保存。
-   - 必要に応じて「**Run**」ボタンをクリックしてパイプラインを実行し、動作を確認します。
-
-### 5. ビルド変数の削減と汎用性の向上
-
-パイプライン内で事前定義済みのビルド変数 `Build.SourceBranch` を使用することで、パラメータの数を減らし、スクリプトの汎用性を向上させます。これにより、異なるブランチでも同じスクリプトを再利用できるようになります。
-
-#### スクリプト内での使用例
-
-`UpdatePackageReferences.ps1` スクリプト内で、パイプライン変数 `Build.SourceBranch` を使用してターゲットブランチを動的に設定します。
-
-```powershell
-# ビルド対象ブランチを取得
-$targetBranch = $env:BUILD_SOURCEBRANCH
-```
-これにより、スクリプトがどのブランチからビルドされたかに応じて、自動的にプルリクエストのターゲットブランチが設定されます。
-
-
-
-思考時間: 14 秒
-
-markdown
-コードをコピーする
 ## パイプラインタスクの設定
 
 Azure DevOpsのClassic Editorを使用して、パイプラインに必要なタスクを追加します。以下の手順で設定を行います。
@@ -708,4 +624,3 @@ Azure DevOpsの組み込み変数の活用: 組織名、プロジェクト名、
 セキュリティとエラーハンドリングの徹底: System.AccessToken の取り扱いに注意し、エラーチェックを行って信頼性を確保します。
 
 変数グループによる一元管理: 複数のパイプラインで共通の変数を使用する場合、変数グループを作成して一元管理します。
-S
