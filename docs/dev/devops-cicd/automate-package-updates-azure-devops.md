@@ -372,6 +372,7 @@ Azure DevOpsのClassic Editorを使用して、パイプラインに必要なタ
 ```powershell
 # ビルド対象ブランチを取得
 $targetBranch = $env:BUILD_SOURCEBRANCH
+```
 これにより、スクリプトがどのブランチからビルドされたかに応じて、自動的にプルリクエストのターゲットブランチが設定されます。
 
 6. 変数グループの活用（オプション）
