@@ -232,6 +232,7 @@ $branchName = "pullrequests/update-package-version-$(Build.BuildId)"
 git checkout -b $branchName
 git add **/*.csproj
 git commit -m "Update package references to $packageName $packageVersion"
+```
 
 # === 8. 変更のプッシュ ===
 git push origin $branchName
