@@ -111,189 +111,189 @@ if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
    ```
    ## PowerShellスクリプトの作成
 
-次に、PowerShellスクリプトを作成します。このスクリプトは、対象ソリューションが同じリポジトリに存在することを前提とし、必要なパラメータをパイプラインから受け取ります。**ビルド対象ブランチ (`$targetBranch`)** は、事前定義済みのビルド変数 `Build.SourceBranch` を使用して汎用性を高めます。
+    次に、PowerShellスクリプトを作成します。このスクリプトは、対象ソリューションが同じリポジトリに存在することを前提とし、必要なパラメータをパイプラインから受け取ります。**ビルド対象ブランチ (`$targetBranch`)** は、事前定義済みのビルド変数 `Build.SourceBranch` を使用して汎用性を高めます。
 
-### `UpdatePackageReferences.ps1` の作成
+    ### `UpdatePackageReferences.ps1` の作成
 
-プロジェクトリポジトリ内に `Scripts` フォルダを作成し、その中に `UpdatePackageReferences.ps1` ファイルを配置します。
+    プロジェクトリポジトリ内に `Scripts` フォルダを作成し、その中に `UpdatePackageReferences.ps1` ファイルを配置します。
 
-```powershell
-# File: Scripts/UpdatePackageReferences.ps1
+    ```powershell
+    # File: Scripts/UpdatePackageReferences.ps1
 
-param (
-    [Parameter(Mandatory = $true)]
-    [string]$ProjectPath,
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectPath,
 
-    [Parameter(Mandatory = $true)]
-    [string]$SolutionPath,
+        [Parameter(Mandatory = $true)]
+        [string]$SolutionPath,
 
-    [Parameter(Mandatory = $true)]
-    [string]$PackageOutputDir
-)
+        [Parameter(Mandatory = $true)]
+        [string]$PackageOutputDir
+    )
 
-# === 1. 組織名、プロジェクト名、リポジトリIDの取得 ===
+    # === 1. 組織名、プロジェクト名、リポジトリIDの取得 ===
 
-# System.TeamFoundationCollectionUri から組織名を抽出
-$collectionUri = $env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI
+    # System.TeamFoundationCollectionUri から組織名を抽出
+    $collectionUri = $env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI
 
-if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
-    $organization = $matches['organization']
-} else {
-    Write-Error "組織名を URI から抽出できませんでした。"
-    exit 1
-}
-
-# プロジェクト名とリポジトリIDを取得
-$project = $env:SYSTEM_TEAMPROJECT
-$repositoryId = $env:BUILD_REPOSITORY_ID
-
-Write-Host "組織名: $organization"
-Write-Host "プロジェクト名: $project"
-Write-Host "リポジトリID: $repositoryId"
-
-# === 2. .nupkg ファイルの取得 ===
-
-# 生成された .nupkg ファイルを取得
-$latestNupkg = Get-ChildItem -Path $PackageOutputDir -Filter *.nupkg | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-
-if ($null -eq $latestNupkg) {
-    Write-Error ".nupkg ファイルが生成されていません。nuget pack が成功したか確認してください。"
-    exit 1
-}
-
-Write-Host "最新の .nupkg ファイル: $($latestNupkg.FullName)"
-
-# === 3. PowerShellモジュールのインポート ===
-
-# モジュールのパス（スクリプトと同じディレクトリに配置）
-$modulePath = "$PSScriptRoot\PackageUtils.psm1"
-
-if (-not (Test-Path $modulePath)) {
-    Write-Error "モジュールファイルが見つかりません: $modulePath"
-    exit 1
-}
-
-Import-Module $modulePath
-
-# === 4. パッケージ情報の取得 ===
-
-$packageInfo = Get-PackageInfoFromNupkg -NupkgPath $latestNupkg.FullName
-
-if ($null -eq $packageInfo) {
-    Write-Error "パッケージ情報の取得に失敗しました。"
-    exit 1
-}
-
-$packageName = $packageInfo.Name
-$packageVersion = $packageInfo.Version
-
-Write-Host "パッケージ名: $packageName"
-Write-Host "パッケージバージョン: $packageVersion"
-
-# === 5. 他の .csproj ファイルの更新 ===
-
-# 更新対象の .csproj ファイルを取得（自分自身のプロジェクトを除外）
-$csprojFiles = Get-ChildItem -Path . -Recurse -Filter *.csproj | Where-Object { $_.FullName -ne (Resolve-Path $ProjectPath) }
-
-# プロジェクトファイルの更新
-foreach ($file in $csprojFiles) {
-    [xml]$xmlContent = Get-Content $file.FullName
-
-    # PackageReference ノードを検索
-    $packageReferences = $xmlContent.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }
-
-    if ($packageReferences) {
-        foreach ($pr in $packageReferences) {
-            $pr.Version = $packageVersion
-            Write-Host "$($file.FullName) の PackageReference '$packageName' をバージョン '$packageVersion' に更新しました。"
-        }
-        # 更新されたXMLを保存
-        $xmlContent.Save($file.FullName)
+    if ($collectionUri -match "https://dev\.azure\.com/(?<organization>[^/]+)/") {
+        $organization = $matches['organization']
     } else {
-        Write-Host "$($file.FullName) にはパッケージ '$packageName' の参照がありません。"
+        Write-Error "組織名を URI から抽出できませんでした。"
+        exit 1
     }
-}
 
-# === 6. ビルドの実行 ===
+    # プロジェクト名とリポジトリIDを取得
+    $project = $env:SYSTEM_TEAMPROJECT
+    $repositoryId = $env:BUILD_REPOSITORY_ID
 
-dotnet build $SolutionPath
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "ビルドに失敗しました。プルリクエストの作成を中止します。"
-    exit 1
-}
+    Write-Host "組織名: $organization"
+    Write-Host "プロジェクト名: $project"
+    Write-Host "リポジトリID: $repositoryId"
 
-# === 7. Git の設定とコミット ===
+    # === 2. .nupkg ファイルの取得 ===
 
-git config user.email "build@yourdomain.com"
-git config user.name "Build Agent"
+    # 生成された .nupkg ファイルを取得
+    $latestNupkg = Get-ChildItem -Path $PackageOutputDir -Filter *.nupkg | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
-# 新しいブランチの作成と変更のコミット
-$branchName = "pullrequests/update-package-version-$(Build.BuildId)"
-git checkout -b $branchName
-git add **/*.csproj
-git commit -m "Update package references to $packageName $packageVersion"
-
-# === 8. 変更のプッシュ ===
-git push origin $branchName
-
-# === 9. プルリクエストの作成 ===
-## 環境変数から System.AccessToken を取得
-$accessToken = $env:SYSTEM_ACCESSTOKEN
-
-## 認証ヘッダーの作成（Bearer 認証を使用）
-$headers = @{
-    Authorization = "Bearer $accessToken"
-    Content-Type = "application/json"
-}
-## ビルドサービスアカウントの ID を取得$profileUrl = "https://vssps.dev.azure.com/$organization/_apis/connectionData?connectOptions=none&lastChangeId=-1&lastChangeId64=-1"
-$profileResponse = Invoke-RestMethod -Method Get -Uri $profileUrl -Headers $headers
-$buildServiceAccountId = $profileResponse.authenticatedUser.id
-
-## ビルド対象ブランチを取得
-$targetBranch = $env:BUILD_SOURCEBRANCH
-
-## プルリクエストの作成に POST を使用
-$prUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests?api-version=6.0"
-
-$body = @{
-    sourceRefName = "refs/heads/$branchName"
-    targetRefName = "$targetBranch"
-    title = "Update package references to $packageName $packageVersion"
-    description = "This PR was created automatically by the build pipeline."
-    reviewers = @()
-} | ConvertTo-Json
-
-$response = Invoke-RestMethod -Method Post -Uri $prUrl -Headers $headers -Body $body
-
-Write-Host "プルリクエストを作成しました。PR ID: $($response.pullRequestId)"
-
-## プルリクエストの自動完了設定に PATCH を使用
-$prUpdateUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests/$($response.pullRequestId)?api-version=6.0"
-
-$prUpdateBody = @{
-    autoCompleteSetBy = @{
-        id = $buildServiceAccountId
+    if ($null -eq $latestNupkg) {
+        Write-Error ".nupkg ファイルが生成されていません。nuget pack が成功したか確認してください。"
+        exit 1
     }
-} | ConvertTo-Json
 
-Invoke-RestMethod -Method Patch -Uri $prUpdateUrl -Headers $headers -Body $prUpdateBody
+    Write-Host "最新の .nupkg ファイル: $($latestNupkg.FullName)"
 
-Write-Host "プルリクエストに自動完了設定を適用しました。"
-```
+    # === 3. PowerShellモジュールのインポート ===
 
-変更点:
-```
-$body = @{
-    sourceRefName = "refs/heads/$branchName"
-    targetRefName = "$targetBranch" # 変更前: "refs/heads/main"
-    title = "Update package references to $packageName $packageVersion"
-    description = "This PR was created automatically by the build pipeline."
-    reviewers = @()
-} | ConvertTo-Json
+    # モジュールのパス（スクリプトと同じディレクトリに配置）
+    $modulePath = "$PSScriptRoot\PackageUtils.psm1"
 
-```
+    if (-not (Test-Path $modulePath)) {
+        Write-Error "モジュールファイルが見つかりません: $modulePath"
+        exit 1
+    }
 
-targetRefName の動的設定: プルリクエストのターゲットブランチを固定の "refs/heads/main" から、ビルド変数 Build.SourceBranch を使用して動的に設定するように変更しました。これにより、ビルド対象ブランチに応じてプルリクエストのターゲットブランチが自動的に設定され、スクリプトの汎用性が向上します。
+    Import-Module $modulePath
+
+    # === 4. パッケージ情報の取得 ===
+
+    $packageInfo = Get-PackageInfoFromNupkg -NupkgPath $latestNupkg.FullName
+
+    if ($null -eq $packageInfo) {
+        Write-Error "パッケージ情報の取得に失敗しました。"
+        exit 1
+    }
+
+    $packageName = $packageInfo.Name
+    $packageVersion = $packageInfo.Version
+
+    Write-Host "パッケージ名: $packageName"
+    Write-Host "パッケージバージョン: $packageVersion"
+
+    # === 5. 他の .csproj ファイルの更新 ===
+
+    # 更新対象の .csproj ファイルを取得（自分自身のプロジェクトを除外）
+    $csprojFiles = Get-ChildItem -Path . -Recurse -Filter *.csproj | Where-Object { $_.FullName -ne (Resolve-Path $ProjectPath) }
+
+    # プロジェクトファイルの更新
+    foreach ($file in $csprojFiles) {
+        [xml]$xmlContent = Get-Content $file.FullName
+
+        # PackageReference ノードを検索
+        $packageReferences = $xmlContent.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }
+
+        if ($packageReferences) {
+            foreach ($pr in $packageReferences) {
+                $pr.Version = $packageVersion
+                Write-Host "$($file.FullName) の PackageReference '$packageName' をバージョン '$packageVersion' に更新しました。"
+            }
+            # 更新されたXMLを保存
+            $xmlContent.Save($file.FullName)
+        } else {
+            Write-Host "$($file.FullName) にはパッケージ '$packageName' の参照がありません。"
+        }
+    }
+
+    # === 6. ビルドの実行 ===
+
+    dotnet build $SolutionPath
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "ビルドに失敗しました。プルリクエストの作成を中止します。"
+        exit 1
+    }
+
+    # === 7. Git の設定とコミット ===
+
+    git config user.email "build@yourdomain.com"
+    git config user.name "Build Agent"
+
+    # 新しいブランチの作成と変更のコミット
+    $branchName = "pullrequests/update-package-version-$(Build.BuildId)"
+    git checkout -b $branchName
+    git add **/*.csproj
+    git commit -m "Update package references to $packageName $packageVersion"
+
+    # === 8. 変更のプッシュ ===
+    git push origin $branchName
+
+    # === 9. プルリクエストの作成 ===
+    ## 環境変数から System.AccessToken を取得
+    $accessToken = $env:SYSTEM_ACCESSTOKEN
+
+    ## 認証ヘッダーの作成（Bearer 認証を使用）
+    $headers = @{
+        Authorization = "Bearer $accessToken"
+        Content-Type = "application/json"
+    }
+    ## ビルドサービスアカウントの ID を取得$profileUrl = "https://vssps.dev.azure.com/$organization/_apis/connectionData?connectOptions=none&lastChangeId=-1&lastChangeId64=-1"
+    $profileResponse = Invoke-RestMethod -Method Get -Uri $profileUrl -Headers $headers
+    $buildServiceAccountId = $profileResponse.authenticatedUser.id
+
+    ## ビルド対象ブランチを取得
+    $targetBranch = $env:BUILD_SOURCEBRANCH
+
+    ## プルリクエストの作成に POST を使用
+    $prUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests?api-version=6.0"
+
+    $body = @{
+        sourceRefName = "refs/heads/$branchName"
+        targetRefName = "$targetBranch"
+        title = "Update package references to $packageName $packageVersion"
+        description = "This PR was created automatically by the build pipeline."
+        reviewers = @()
+    } | ConvertTo-Json
+
+    $response = Invoke-RestMethod -Method Post -Uri $prUrl -Headers $headers -Body $body
+
+    Write-Host "プルリクエストを作成しました。PR ID: $($response.pullRequestId)"
+
+    ## プルリクエストの自動完了設定に PATCH を使用
+    $prUpdateUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests/$($response.pullRequestId)?api-version=6.0"
+
+    $prUpdateBody = @{
+        autoCompleteSetBy = @{
+            id = $buildServiceAccountId
+        }
+    } | ConvertTo-Json
+
+    Invoke-RestMethod -Method Patch -Uri $prUpdateUrl -Headers $headers -Body $prUpdateBody
+
+    Write-Host "プルリクエストに自動完了設定を適用しました。"
+    ```
+
+    変更点:
+    ```
+    $body = @{
+        sourceRefName = "refs/heads/$branchName"
+        targetRefName = "$targetBranch" # 変更前: "refs/heads/main"
+        title = "Update package references to $packageName $packageVersion"
+        description = "This PR was created automatically by the build pipeline."
+        reviewers = @()
+    } | ConvertTo-Json
+
+    ```
+
+    targetRefName の動的設定: プルリクエストのターゲットブランチを固定の "refs/heads/main" から、ビルド変数 Build.SourceBranch を使用して動的に設定するように変更しました。これにより、ビルド対象ブランチに応じてプルリクエストのターゲットブランチが自動的に設定され、スクリプトの汎用性が向上します。
 
 
 ## パイプラインタスクの設定
@@ -373,9 +373,10 @@ Azure DevOpsのClassic Editorを使用して、パイプラインに必要なタ
 # ビルド対象ブランチを取得
 $targetBranch = $env:BUILD_SOURCEBRANCH
 ```
+
 これにより、スクリプトがどのブランチからビルドされたかに応じて、自動的にプルリクエストのターゲットブランチが設定されます。
 
-6. 変数グループの活用（オプション）
+### 6. 変数グループの活用（オプション）
 複数のパイプラインで共通の変数を使用する場合、変数グループを作成して一元管理することをお勧めします。これにより、メンテナンスが容易になり、一貫性を保つことができます。
 
 変数グループの作成:
@@ -389,7 +390,7 @@ $targetBranch = $env:BUILD_SOURCEBRANCH
 パイプライン編集画面で「Variables（変数）」タブを選択します。
 「Link variable group」をクリックし、作成した変数グループを選択します。
 
-7. エージェントジョブの並列実行設定（オプション）
+### 7. エージェントジョブの並列実行設定（オプション）
 必要に応じて、複数のジョブを並列で実行する設定を行うことで、ビルド時間を短縮できます。ただし、依存関係があるタスクがある場合は注意が必要です。
 
 スクリプトの詳細解説
@@ -503,13 +504,13 @@ $branchName = "pullrequests/update-package-version-$(Build.BuildId)"
 ```
 上記の行では、ブランチ名にpullrequests/というプレフィックスを追加し、ブランチ名をpullrequests/update-package-version-123のように設定しています。これにより、ブランチがプルリクエスト用であることが明確になります。
 
-8. 変更のプッシュ
+### 8. 変更のプッシュ
 作成したブランチをリモートリポジトリにプッシュします。
 ```
 git push origin $branchName
 ```
 
-9. プルリクエストの作成
+### 9. プルリクエストの作成
 Azure DevOpsのREST APIを使用してプルリクエストを作成し、自動完了設定を適用します。ビルド対象ブランチ ($targetBranch) は、事前定義済みのビルド変数 Build.SourceBranch を使用して設定します。
 ```
 # 環境変数から System.AccessToken を取得
@@ -580,7 +581,7 @@ PowerShellモジュールを作成し、共通の処理を関数として定義�
 2. セキュリティの確保
 System.AccessTokenの取り扱い: System.AccessToken は強力な権限を持つため、スクリプト内でこのトークンがログや出力に表示されないよう注意してください。例えば、Write-Host $accessToken のような出力を避ける。
 
-最小権限の原則: パイプラインが必要とする最小限の権限を付与します。System.AccessToken の権限は、プロジェクトの設定で適切に制限してください。
+    最小権限の原則: パイプラインが必要とする最小限の権限を付与します。System.AccessToken の権限は、プロジェクトの設定で適切に制限してください。
 
 3. エラーハンドリング
 各ステップでエラーチェックを行い、問題が発生した場合にパイプラインを中断するようにします。これにより、後続の処理に不整合が生じるのを防ぎます。
@@ -593,26 +594,27 @@ if ($null -eq $packageInfo) {
 ```
 4. 変数グループの活用
 
-複数のパイプラインで共通の変数を使用する場合、変数グループを作成して一元管理します。これにより、メンテナンスが容易になります。
+    複数のパイプラインで共通の変数を使用する場合、変数グループを作成して一元管理します。これにより、メンテナンスが容易になります。
 
-変数グループの作成:
+5. 変数グループの作成:
 
-「Pipelines」 > 「Library」に移動します。
-「+ Variable group」をクリックし、グループ名（例: CommonSettings）を入力します。
-必要な変数（ORGANIZATION、PROJECT、REPOSITORY_ID、TARGET_BRANCH など）を追加します。
-「Save」をクリックして保存します。
-パイプラインへの変数グループのリンク:
+    - 「Pipelines」 > 「Library」に移動します。
+    - 「+ Variable group」をクリックし、グループ名（例: CommonSettings）を入力します。
+    - 必要な変数（ORGANIZATION、PROJECT、REPOSITORY_ID、TARGET_BRANCH など）を追加します。
+    - 「Save」をクリックして保存します。
 
-パイプライン編集画面で「Variables（変数）」タブを選択します。
-「Link variable group」をクリックし、作成した変数グループを選択します。
+6. パイプラインへの変数グループのリンク:
+
+    パイプライン編集画面で「Variables（変数）」タブを選択します。
+    「Link variable group」をクリックし、作成した変数グループを選択します。
 
 5. ロギングと通知
 
-重要なステップやエラー発生時に詳細なログを出力し、必要に応じて通知を設定します。これにより、問題の早期発見と対応が可能になります。
+    重要なステップやエラー発生時に詳細なログを出力し、必要に応じて通知を設定します。これにより、問題の早期発見と対応が可能になります。
 
-```
-Write-Host "プルリクエストを作成しました。PR ID: $($response.pullRequestId)"
-```
+    ```
+    Write-Host "プルリクエストを作成しました。PR ID: $($response.pullRequestId)"
+    ```
 
 ## まとめ
 
