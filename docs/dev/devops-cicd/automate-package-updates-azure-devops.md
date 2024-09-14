@@ -25,6 +25,13 @@ Azure DevOpsのClassic Editorを利用して、既存の`.nupkg`ファイルか�
 - **Git**: リポジトリ管理とプルリクエスト作成に使用。
 - **適切な権限**: パイプラインがリポジトリやプロジェクト設定にアクセスできる権限。
 
+### 適切な権限
+
+対象リポジトリに対してBuild Serviceへ以下の権限を付与する
+  - Contribute
+  - Contribute to pull requests
+  - Create Branch
+
 ## パイプライン変数の設定
 
 Azure DevOpsの組み込み変数を活用し、パイプライン内で必要な情報を動的に取得します。特に以下の変数を使用します：
@@ -348,9 +355,9 @@ Azure DevOpsのClassic Editorを使用して、パイプラインに必要なタ
    - **スクリプトファイル**: `Scripts\UpdatePackageReferences.ps1` を指定。
    - **Arguments**: 以下のようにパラメータを渡します。
      ```plaintext
-     -ProjectPath "Path\To\Your\Project.csproj" -SolutionPath "Path\To\Your\Solution.sln" -PackageOutputDir "Output\Packages"
+      -SolutionPath "Path\To\Your\Solution.sln" -PackageOutputDir $(Build.ArtifactStagingDirectory)
      ```
-     ここで、`Path\To\Your\Project.csproj` および `Path\To\Your\Solution.sln` は実際のプロジェクトとソリューションのパスに置き換えてください。
+     ここで、`Path\To\Your\Solution.sln` は実際のプロジェクトとソリューションのパスに置き換えてください。
 
    - **オプション設定**:
      - 「**Options（オプション）**」タブで「**Allow scripts to access the OAuth token**」が有効になっていることを確認します。

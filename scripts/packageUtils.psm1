@@ -3,22 +3,23 @@
 function Get-PackageInfoFromNupkg {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$NupkgPath
+        [string]$Path
     )
 
-    if (-not (Test-Path $NupkgPath)) {
-        Write-Error "指定された .nupkg ファイルが存在しません: $NupkgPath"
+    if (-not (Test-Path $Path)) {
+        Write-Error "指定された .nupkg ファイルが存在しません: $Path"
         return $null
     }
 
     # 一時ディレクトリを作成
-    $tempDir = New-TemporaryFile | Remove-Item -Force -Confirm:$false -ErrorAction SilentlyContinue
-    $tempDir = Split-Path $tempDir
-    New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    Write-Host "一時ディレクトリを作成1"
+    $newdir = (New-Guid).Guid
+    $tempDir =New-Item -Path $env:AGENT_TEMPDIRECTORY -Name $newdir -ItemType "directory"
+    Write-Host "一時ディレクトリを作成2 $tempDir"
 
     try {
         # .nupkgファイルを解凍
-        Expand-Archive -Path $NupkgPath -DestinationPath $tempDir -Force
+        Expand-Archive -Path $Path -DestinationPath $tempDir -Force
 
         # 解凍先から .nuspec ファイルを検索
         $nuspecFile = Get-ChildItem -Path $tempDir -Recurse -Filter *.nuspec | Select-Object -First 1

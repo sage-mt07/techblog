@@ -28,6 +28,7 @@ $repositoryId = $env:BUILD_REPOSITORY_ID
 Write-Host "組織名: $organization"
 Write-Host "プロジェクト名: $project"
 Write-Host "リポジトリID: $repositoryId"
+Write-Host "PackageOutputDir: $PackageOutputDir"
 
 # === 2. .nupkg ファイルの取得 ===
 
@@ -38,13 +39,13 @@ if ($null -eq $latestNupkg) {
     Write-Error ".nupkg ファイルが生成されていません。nuget pack が成功したか確認してください。"
     exit 1
 }
-
-Write-Host "最新の .nupkg ファイル: $($latestNupkg.FullName)"
+$latestNupkgPath=$latestNupkg.FullName
+Write-Host "最新の .nupkg ファイル: $($latestNupkgPath)"
 
 # === 3. PowerShellモジュールのインポート ===
 
 # モジュールのパス（スクリプトと同じディレクトリに配置）
-$modulePath = "$PSScriptRoot\PackageUtils.psm1"
+$modulePath = "$PSScriptRoot/packageUtils.psm1"
 
 if (-not (Test-Path $modulePath)) {
     Write-Error "モジュールファイルが見つかりません: $modulePath"
@@ -55,7 +56,10 @@ Import-Module $modulePath
 
 # === 4. パッケージ情報の取得 ===
 
-$packageInfo = Get-PackageInfoFromNupkg -NupkgPath $latestNupkg.FullName
+Write-Host "最新の .nupkg ファイル: $($latestNupkgPath)"
+
+
+$packageInfo = Get-PackageInfoFromNupkg -Path $latestNupkgPath
 
 if ($null -eq $packageInfo) {
     Write-Error "パッケージ情報の取得に失敗しました。"
@@ -92,37 +96,39 @@ foreach ($file in $csprojFiles) {
     }
 }
 
-# === 6. ビルドの実行 ===
-
-dotnet build $SolutionPath
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "ビルドに失敗しました。プルリクエストの作成を中止します。"
-    exit 1
-}
 
 # === 7. Git の設定とコミット ===
 
+$buildId=$env:BUILD_BUILDID
 git config user.email "build@yourdomain.com"
 git config user.name "Build Agent"
 
 # 新しいブランチの作成と変更のコミット
-$branchName = "pr/update-package-version-$(Build.BuildId)"
+$branchName = "pr/update-package-version-$buildId"
 git checkout -b $branchName
 git add **/*.csproj
 git commit -m "Update package references to $packageName $packageVersion"
 
+Write-Host "git commit"
+
 # === 8. 変更のプッシュ ===
+# 環境変数から System.AccessToken を取得
+$accessToken = $env:SYSTEM_ACCESSTOKEN
+
+# git remote set-url origin https://$AccessToken@dev.azure.com/$organization/$project/_git/$repositoryId
+
 git push origin $branchName
+
+Write-Host "git push"
+
 
 # === 9. プルリクエストの作成 ===
 
-# 環境変数から System.AccessToken を取得
-$accessToken = $env:SYSTEM_ACCESSTOKEN
 
 # 認証ヘッダーの作成（Bearer 認証を使用）
 $headers = @{
     Authorization = "Bearer $accessToken"
-    Content-Type = "application/json"
+    "Content-Type" = "application/json"
 }
 
 # ビルドサービスアカウントの ID を取得
@@ -144,7 +150,12 @@ $body = @{
     reviewers = @()
 } | ConvertTo-Json
 
+Write-Host "request $prUrl"
+Write-Host "body $body"
+
 $response = Invoke-RestMethod -Method Post -Uri $prUrl -Headers $headers -Body $body
+
+Write-Host "response $response"
 
 Write-Host "プルリクエストを作成しました。PR ID: $($response.pullRequestId)"
 
