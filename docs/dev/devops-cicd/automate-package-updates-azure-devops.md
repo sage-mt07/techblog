@@ -237,25 +237,32 @@ git commit -m "Update package references to $packageName $packageVersion"
 git push origin $branchName
 
 # === 9. プルリクエストの作成 ===
-
-# 環境変数から System.AccessToken を取得
+```
+## 環境変数から System.AccessToken を取得
 $accessToken = $env:SYSTEM_ACCESSTOKEN
 
-# 認証ヘッダーの作成（Bearer 認証を使用）
+```
+## 認証ヘッダーの作成（Bearer 認証を使用）
+```
 $headers = @{
     Authorization = "Bearer $accessToken"
     Content-Type = "application/json"
 }
-
-# ビルドサービスアカウントの ID を取得
+```
+## ビルドサービスアカウントの ID を取得
+```
 $profileUrl = "https://vssps.dev.azure.com/$organization/_apis/connectionData?connectOptions=none&lastChangeId=-1&lastChangeId64=-1"
 $profileResponse = Invoke-RestMethod -Method Get -Uri $profileUrl -Headers $headers
 $buildServiceAccountId = $profileResponse.authenticatedUser.id
 
-# ビルド対象ブランチを取得
+```
+## ビルド対象ブランチを取得
+```
 $targetBranch = $env:BUILD_SOURCEBRANCH
 
-# プルリクエストの作成に POST を使用
+```
+## プルリクエストの作成に POST を使用
+```
 $prUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests?api-version=6.0"
 
 $body = @{
@@ -270,7 +277,9 @@ $response = Invoke-RestMethod -Method Post -Uri $prUrl -Headers $headers -Body $
 
 Write-Host "プルリクエストを作成しました。PR ID: $($response.pullRequestId)"
 
-# プルリクエストの自動完了設定に PATCH を使用
+```
+## プルリクエストの自動完了設定に PATCH を使用
+```
 $prUpdateUrl = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repositoryId/pullrequests/$($response.pullRequestId)?api-version=6.0"
 
 $prUpdateBody = @{
