@@ -1,8 +1,6 @@
 # File: Scripts/UpdatePackageReferences.ps1
 
 param (
-    [Parameter(Mandatory = $true)]
-    [string]$ProjectPath,
 
     [Parameter(Mandatory = $true)]
     [string]$SolutionPath,
@@ -73,7 +71,7 @@ Write-Host "パッケージバージョン: $packageVersion"
 # === 5. 他の .csproj ファイルの更新 ===
 
 # 更新対象の .csproj ファイルを取得（自分自身のプロジェクトを除外）
-$csprojFiles = Get-ChildItem -Path . -Recurse -Filter *.csproj | Where-Object { $_.FullName -ne (Resolve-Path $ProjectPath) }
+$csprojFiles = Get-ChildItem -Path . -Recurse -Filter *.csproj 
 
 # プロジェクトファイルの更新
 foreach ($file in $csprojFiles) {
