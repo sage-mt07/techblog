@@ -1,4 +1,4 @@
-# File: script/CommitReadme.ps1
+# File: script/CommitPackageReference.ps1
 
 param (
     [Parameter(Mandatory = $true)]

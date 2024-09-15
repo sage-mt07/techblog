@@ -1,4 +1,4 @@
-# File: script/GenerateReadme.ps1
+# File: script/GeneratePackageReference.ps1
 
 param (
     [Parameter(Mandatory = $true)]
