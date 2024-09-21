@@ -1,10 +1,9 @@
 # Define the base and overlay directories
-$basePath = "base"
-$overlaysPath = "overlays"
-$outputMd = "resource_summary_with_check.md"
+$projectRoot = "project-root"
+$outputMd = "resource_summary_with_host_details.md"
 
 # Load node resource limits from an external JSON file
-$nodeResourcesFile = "node_resources.json"
+$nodeResourcesFile = Join-Path $projectRoot "node_resources.json"
 if (-Not (Test-Path $nodeResourcesFile)) {
     Write-Error "Node resources file not found: $nodeResourcesFile"
     exit 1
@@ -13,7 +12,7 @@ if (-Not (Test-Path $nodeResourcesFile)) {
 # Import node resources from the JSON file
 $nodeResources = Get-Content $nodeResourcesFile | ConvertFrom-Json
 
-# Function to parse CPU and memory from deployment.yaml
+# Function to parse maxSkew, CPU, and memory from deployment.yaml
 function Get-ResourceValues {
     param(
         [string]$deploymentYamlPath
@@ -31,7 +30,7 @@ function Get-ResourceValues {
 
         # Initialize service resource if not exists
         if (-not $serviceResources.ContainsKey($serviceName)) {
-            $serviceResources[$serviceName] = @{ "cpu" = 0; "memory" = 0 }
+            $serviceResources[$serviceName] = @{ "cpu" = 0; "memory" = 0; "maxSkew" = 1 }
         }
 
         if ($container.resources.requests.cpu) {
@@ -48,103 +47,68 @@ function Get-ResourceValues {
             }
             $serviceResources[$serviceName]["memory"] += $memoryMi
         }
+
+        # Extract maxSkew from topologySpreadConstraints
+        foreach ($constraint in $yamlContent.spec.template.spec.topologySpreadConstraints) {
+            if ($constraint.maxSkew) {
+                $serviceResources[$serviceName]["maxSkew"] = [double]$constraint.maxSkew
+            }
+        }
     }
 
     return $serviceResources
 }
 
-# Function to run kustomize build and apply overlays
-function Get-KustomizeResourceValues {
-    param(
-        [string]$overlayPath
-    )
-
-    # Run kustomize build to get the fully patched deployment.yaml
-    $patchOutput = kustomize build $overlayPath
-
-    # Save the output to a temporary YAML file
-    $tempFile = [System.IO.Path]::GetTempFileName()
-    Set-Content -Path $tempFile -Value $patchOutput
-
-    # Extract resource values from the patched YAML
-    return Get-ResourceValues -deploymentYamlPath $tempFile
-}
-
-# Get current date for resource check
-$currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-
-# Initialize a hash table to hold resource summaries for each environment and each service
-$resourceSummary = @{}
-
-# Process base deployment
-$baseDeploymentPath = Join-Path $basePath "deployment.yaml"
-$baseResources = Get-ResourceValues -deploymentYamlPath $baseDeploymentPath
-$resourceSummary["base"] = $baseResources
-
-# Process overlays (dev, prod) and apply Kustomize patches
-$overlays = Get-ChildItem -Path $overlaysPath -Directory
-foreach ($overlay in $overlays) {
-    $overlayResources = Get-KustomizeResourceValues -overlayPath $overlay.FullName
-    $resourceSummary[$overlay.Name] = $overlayResources
-}
-
-# Generate the output in Markdown format with resource allocation checks
+# Initialize the output for Markdown format
 $outputContent = @"
-# Kubernetes Resource Summary with Allocation Check
+# Kubernetes Host Resource Allocation Summary
 
-**Check Date:** $currentDate
-
-| Environment | Service Name | CPU (cores) | Memory (Mi) | Allocation Status |
-|-------------|--------------|-------------|-------------|-------------------|
 "@
 
-foreach ($env in $resourceSummary.Keys) {
-    $totalCpu = 0
-    $totalMemory = 0
-    $allocationStatus = "OK"
+# Add detailed table for host to namespace and service allocation
+$detailedTable = @"
+# Kubernetes Host Allocation Details
 
-    # Determine the resource limits for the current environment based on the number of hosts and their resources
-    if ($nodeResources.ContainsKey($env)) {
-        $hostCount = $nodeResources.$env.hosts
-        $cpuPerHost = $nodeResources.$env.cpuPerHost
-        $memoryPerHost = $nodeResources.$env.memoryPerHost
-        $nodeTotalCpu = $hostCount * $cpuPerHost
-        $nodeTotalMemory = $hostCount * $memoryPerHost
-    } else {
-        # Default values if environment-specific limits are not set
-        $nodeTotalCpu = 4
-        $nodeTotalMemory = 8192
+"@
+
+# Process each namespace
+$namespaces = Get-ChildItem -Path $projectRoot -Directory
+foreach ($namespace in $namespaces) {
+    # Process base deployment for each namespace
+    $baseDeploymentPath = Join-Path $namespace.FullName "base/deployment.yaml"
+    $namespaceResources = Get-ResourceValues -deploymentYamlPath $baseDeploymentPath
+
+    # Host allocation details
+    $hostCount = $nodeResources.$namespace.Name.hosts
+    $cpuPerHost = $nodeResources.$namespace.Name.cpuPerHost
+    $memoryPerHost = $nodeResources.$namespace.Name.memoryPerHost
+    $totalCpu = ($namespaceResources | Measure-Object -Property cpu -Sum).Sum
+    $totalMemory = ($namespaceResources | Measure-Object -Property memory -Sum).Sum
+    $cpuUsagePerHost = $totalCpu / $hostCount
+    $memoryUsagePerHost = $totalMemory / $hostCount
+    $hostCpuUsagePercent = ($cpuUsagePerHost / $cpuPerHost) * 100
+    $hostMemoryUsagePercent = ($memoryUsagePerHost / $memoryPerHost) * 100
+
+    # Append host allocation to the host allocation table
+    for ($i = 1; $i -le $hostCount; $i++) {
+        $outputContent += "| Host-$i | $([math]::Round($cpuUsagePerHost, 2)) cores | $([math]::Round($memoryUsagePerHost, 2)) Mi |`n"
     }
 
-    foreach ($service in $resourceSummary[$env].Keys) {
-        $cpu = $resourceSummary[$env][$service]["cpu"]
-        $memory = $resourceSummary[$env][$service]["memory"]
-        $totalCpu += $cpu
-        $totalMemory += $memory
-
-        # Check if the total resource allocation exceeds node capacity for each service
-        $allocationStatusService = if ($totalCpu -le $nodeTotalCpu -and $totalMemory -le $nodeTotalMemory) {
-            "OK"
-        } else {
-            "Exceeded"
+    # Append detailed allocation to the detailed table
+    foreach ($service in $namespaceResources.Keys) {
+        $cpu = $namespaceResources[$service]["cpu"]
+        $memory = $namespaceResources[$service]["memory"]
+        for ($i = 1; $i -le $hostCount; $i++) {
+            $detailedTable += "| Host-$i | $namespace.Name | $service | $cpu cores | $memory Mi |`n"
         }
-
-        # Append service information to the Markdown content
-        $outputContent += "| $env | $service | $cpu | $memory | $allocationStatusService |`n"
     }
-
-    # Add overall status for the environment
-    $allocationStatusEnv = if ($totalCpu -gt $nodeTotalCpu -or $totalMemory -gt $nodeTotalMemory) {
-        "Exceeded"
-    } else {
-        "OK"
-    }
-    
-    $outputContent += "| $env (Total) | - | $totalCpu | $totalMemory | $allocationStatusEnv |`n"
 }
+
+# Combine host allocation table and detailed allocation table into the output content
+$outputContent += $detailedTable
 
 # Write the result to a Markdown file
 $outputContent | Set-Content -Path $outputMd
 
 # Output result to console
-Write-Output "Resource summary with allocation check saved to $outputMd"
+Write-Output "Resource summary with host details saved to $outputMd"

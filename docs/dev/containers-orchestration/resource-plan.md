@@ -1,159 +1,218 @@
-# Kubernetes リソース割り当てチェックスクリプトのフォルダ構成と設定方法
-Kubernetes クラスタ内の環境ごとのリソース割り当てをチェックするために、ホスト数および各ホストのCPU、メモリに基づいたリソース管理を行うPowerShellスクリプトを紹介します。本記事では、このスクリプトが前提とするフォルダ構成と設定ファイルの内容を詳しく解説します。
+# Kubernetes リソース管理: ホストごとのリソース割り当てと詳細表
+Kubernetes クラスタを運用する際、ホストごとのリソース使用率や、各ホストに割り当てられたネームスペースおよびサービスの詳細情報を把握することは、効率的なリソース管理に欠かせません。本記事では、ホストごとのリソース割り当て表と、各ホストに割り当てられたネームスペース・サービスの詳細表を作成する方法について解説します。
 
-## フォルダ構成
-以下のようなディレクトリ構成を前提としています。base と overlays のフォルダには、Kubernetesのリソース設定が含まれており、外部ファイル node_resources.json にはホスト数やリソース情報が保存されています。また、patch.yaml に環境ごとに異なる設定を定義し、これをKustomizeで適用します。
-```
-csharpコードをコピーする
+## 1. フォルダ構成とリソース設定
+まず、今回のリソース管理に基づいたフォルダ構成を以下に示します。project-root/ フォルダの下に、ネームスペースごとのフォルダがあり、それぞれのフォルダ内に環境ごとの設定が含まれています。さらに、ホストごとのリソース情報は node_resources.json ファイルで管理します。
+
+```フォルダ構成
+arduino
+コードをコピーする
 project-root/
-├── base/
-│   ├── deployment.yaml
-│   ├── service.yaml
-├── overlays/
-│   ├── dev/
-│   │   ├── kustomization.yaml
-│   │   ├── patch.yaml
-│   ├── prod/
-│   │   ├── kustomization.yaml
-│   │   ├── patch.yaml
+├── namespace-1/
+│   ├── base/
+│   │   ├── deployment.yaml
+│   │   ├── service.yaml
+│   ├── overlays/
+│   │   ├── dev/
+│   │   │   ├── kustomization.yaml
+│   │   ├── prod/
+│   │   │   ├── kustomization.yaml
+├── namespace-2/
+│   ├── base/
+│   │   ├── deployment.yaml
+│   │   ├── service.yaml
+│   ├── overlays/
+│   │   ├── dev/
+│   │   │   ├── kustomization.yaml
+│   │   ├── prod/
+│   │   │   ├── kustomization.yaml
 ├── node_resources.json
 └── Generate-ResourceSummary.ps1
-
 ```
-各ファイルの詳細
-### 1. base/deployment.yaml & base/service.yaml
-base/ フォルダには、デフォルトのKubernetesリソース定義（deployment.yaml、service.yaml）が含まれています。これらのファイルには、サービスのCPUやメモリリソースのリクエストやリミットを定義します。
+- project-root/: Kubernetes プロジェクトのルートフォルダ。
+- namespace-1/, namespace-2/: ネームスペースごとのフォルダ。それぞれのネームスペースに関連する Kubernetes 設定が含まれています。
+- base/: 各ネームスペースにおけるデフォルトのリソース設定（例：deployment.yaml や service.yaml）。
+- overlays/: 環境別のオーバーレイ設定が含まれます（例：dev/, prod/）。
+- node_resources.json: 各ホストのリソース情報（CPU、メモリ）を管理するファイル。
+- Generate-ResourceSummary.ps1: リソース割り当てと詳細情報を出力するスクリプト。
+node_resources.json の例
+各ホストごとのリソース（CPU、メモリ）とホスト数を設定します。
 
-例: deployment.yaml
-
-```yamlコードをコピーする
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: my-app
-spec:
-  replicas: 3
-  template:
-    spec:
-      containers:
-      - name: my-app-container
-        image: my-app-image:latest
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "256Mi"
-```
-
-### 2. overlays/ フォルダ
-overlays/ フォルダには、dev や prod などの環境ごとのKustomize設定ファイル（kustomization.yaml）と、ベースのリソース定義に対してパッチを適用する patch.yaml が含まれています。patch.yaml では、環境ごとに異なるリソース設定を行います。
-
-例: dev/kustomization.yaml
-
-```yamlコードをコピーする
-resources:
-  - ../../base/deployment.yaml
-patchesStrategicMerge:
-  - patch.yaml
-```
-例: prod/kustomization.yaml
-
-```yamlコードをコピーする
-resources:
-  - ../../base/deployment.yaml
-patchesStrategicMerge:
-  - patch.yaml
-```
-
-例: dev/patch.yaml
-
-```yamlコードをコピーする
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: my-app
-spec:
-  replicas: 2
-  template:
-    spec:
-      containers:
-      - name: my-app-container
-        resources:
-          requests:
-            cpu: "600m"
-            memory: "512Mi"
-```
-例: prod/patch.yaml
-
-```yamlコードをコピーする
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: my-app
-spec:
-  replicas: 4
-  template:
-    spec:
-      containers:
-      - name: my-app-container
-        resources:
-          requests:
-            cpu: "1000m"
-            memory: "1Gi"
-```
-patch.yaml ファイルでは、base ディレクトリにある deployment.yaml の内容を上書きする形で、環境ごとのリソースやレプリカ数を変更しています。
-### 3. node_resources.json
-node_resources.json は、各環境（dev、prodなど）におけるホスト数と各ホストのCPU、メモリの情報を保存しているファイルです。この情報を基に、スクリプトは各環境に対して適切なリソース制限を計算します。
-
-例: node_resources.json
 ```jsonコードをコピーする
 {
-  "dev": {
+  "namespace-1": {
     "hosts": 2,
-    "cpuPerHost": 2,
-    "memoryPerHost": 4096
+    "cpuPerHost": 4,
+    "memoryPerHost": 8192
   },
-  "prod": {
-    "hosts": 4,
-    "cpuPerHost": 8,
-    "memoryPerHost": 16384
+  "namespace-2": {
+    "hosts": 2,
+    "cpuPerHost": 4,
+    "memoryPerHost": 8192
   }
 }
 ```
-### 4. Generate-ResourceSummary.ps1
-このPowerShellスクリプトは、node_resources.json ファイルの情報を読み込み、Kubernetesのリソース割り当てをチェックします。サービスごとにリソースの割り当て状況を確認し、ホスト全体のリソース制限を超えないかをチェックします。
+- hosts: 各ネームスペースにおけるホスト数。
+- cpuPerHost: 各ホストに割り当てられる CPU コア数。
+- memoryPerHost: 各ホストに割り当てられるメモリ量（MiB単位）。
+## 2. リソース管理スクリプト
+このスクリプトでは、以下の2つの表を生成します。
 
-スクリプトの主な機能:
-kustomize build コマンドでパッチ適用後のリソースを取得
-各環境ごとにホスト数、CPU、メモリの制限を計算
-リソース割り当てがホストのキャパシティを超えていないかチェック
-Markdown形式で結果を出力
-スクリプト実行方法
-1. リポジトリのセットアップ
-上記のフォルダ構成に従い、ファイルをセットアップします。
+ホストごとのリソース割り当て表：ホストごとの CPU、メモリの割り当てを表示します。
+詳細表：ホストごとに割り当てられたネームスペースとサービスの一覧を示します。
+スクリプトの内容
+以下は、リソース割り当てと詳細表を生成するPowerShellスクリプトです。
 
-2. node_resources.json の作成
-各環境ごとのホスト数やリソースの情報を設定した node_resources.json を作成します。このファイルには、環境ごとに異なるリソース制限を定義します。
+```powershellコードをコピーする
+# Define the base and overlay directories
+$projectRoot = "project-root"
+$outputMd = "resource_summary_with_host_details.md"
 
-3. PowerShellスクリプトの実行
-PowerShellから Generate-ResourceSummary.ps1 を実行して、リソース割り当て状況を確認します。
+# Load node resource limits from an external JSON file
+$nodeResourcesFile = Join-Path $projectRoot "node_resources.json"
+if (-Not (Test-Path $nodeResourcesFile)) {
+    Write-Error "Node resources file not found: $nodeResourcesFile"
+    exit 1
+}
+
+# Import node resources from the JSON file
+$nodeResources = Get-Content $nodeResourcesFile | ConvertFrom-Json
+
+# Function to parse maxSkew, CPU, and memory from deployment.yaml
+function Get-ResourceValues {
+    param(
+        [string]$deploymentYamlPath
+    )
+    
+    # Initialize a hash table for each service
+    $serviceResources = @{}
+
+    # Read the deployment YAML (either a base or patched version)
+    $yamlContent = Get-Content $deploymentYamlPath | Out-String | ConvertFrom-Yaml
+
+    # Extract resource requests and limits for each container
+    foreach ($container in $yamlContent.spec.template.spec.containers) {
+        $serviceName = $yamlContent.metadata.name
+
+        # Initialize service resource if not exists
+        if (-not $serviceResources.ContainsKey($serviceName)) {
+            $serviceResources[$serviceName] = @{ "cpu" = 0; "memory" = 0; "maxSkew" = 1 }
+        }
+
+        if ($container.resources.requests.cpu) {
+            $cpuValue = [double]$container.resources.requests.cpu.Replace('m','') / 1000
+            $serviceResources[$serviceName]["cpu"] += $cpuValue
+        }
+
+        if ($container.resources.requests.memory) {
+            $memoryValue = $container.resources.requests.memory
+            $memoryMi = if ($memoryValue -like "*Mi") { 
+                [double]$memoryValue.Replace('Mi','') 
+            } elseif ($memoryValue -like "*Gi") { 
+                [double]$memoryValue.Replace('Gi','') * 1024 
+            }
+            $serviceResources[$serviceName]["memory"] += $memoryMi
+        }
+
+        # Extract maxSkew from topologySpreadConstraints
+        foreach ($constraint in $yamlContent.spec.template.spec.topologySpreadConstraints) {
+            if ($constraint.maxSkew) {
+                $serviceResources[$serviceName]["maxSkew"] = [double]$constraint.maxSkew
+            }
+        }
+    }
+
+    return $serviceResources
+}
+
+# Initialize the output for Markdown format
+$outputContent = @"
+# Kubernetes Host Resource Allocation Summary
+
+"@
+
+# Add detailed table for host to namespace and service allocation
+$detailedTable = @"
+# Kubernetes Host Allocation Details
+
+"@
+
+# Process each namespace
+$namespaces = Get-ChildItem -Path $projectRoot -Directory
+foreach ($namespace in $namespaces) {
+    # Process base deployment for each namespace
+    $baseDeploymentPath = Join-Path $namespace.FullName "base/deployment.yaml"
+    $namespaceResources = Get-ResourceValues -deploymentYamlPath $baseDeploymentPath
+
+    # Host allocation details
+    $hostCount = $nodeResources.$namespace.Name.hosts
+    $cpuPerHost = $nodeResources.$namespace.Name.cpuPerHost
+    $memoryPerHost = $nodeResources.$namespace.Name.memoryPerHost
+    $totalCpu = ($namespaceResources | Measure-Object -Property cpu -Sum).Sum
+    $totalMemory = ($namespaceResources | Measure-Object -Property memory -Sum).Sum
+    $cpuUsagePerHost = $totalCpu / $hostCount
+    $memoryUsagePerHost = $totalMemory / $hostCount
+    $hostCpuUsagePercent = ($cpuUsagePerHost / $cpuPerHost) * 100
+    $hostMemoryUsagePercent = ($memoryUsagePerHost / $memoryPerHost) * 100
+
+    # Append host allocation to the host allocation table
+    for ($i = 1; $i -le $hostCount; $i++) {
+        $outputContent += "| Host-$i | $([math]::Round($cpuUsagePerHost, 2)) cores | $([math]::Round($memoryUsagePerHost, 2)) Mi |`n"
+    }
+
+    # Append detailed allocation to the detailed table
+    foreach ($service in $namespaceResources.Keys) {
+        $cpu = $namespaceResources[$service]["cpu"]
+        $memory = $namespaceResources[$service]["memory"]
+        for ($i = 1; $i -le $hostCount; $i++) {
+            $detailedTable += "| Host-$i | $namespace.Name | $service | $cpu cores | $memory Mi |`n"
+        }
+    }
+}
+
+# Combine host allocation table and detailed allocation table into the output content
+$outputContent += $detailedTable
+
+# Write the result to a Markdown file
+$outputContent | Set-Content -Path $outputMd
+
+# Output result to console
+Write-Output "Resource summary with host details saved to $outputMd"
+```
+## 3. 実行手順
+リポジトリのセットアップ
+project-root/ フォルダの構成に従い、各ネームスペースごとのフォルダとサービスの YAML ファイルを配置します。各サービスの YAML ファイルに maxSkew を設定し、node_resources.json でホストのリソース情報を管理します。
+
+スクリプトの実行
+PowerShell から以下のコマンドでスクリプトを実行します。
 
 ```powershellコードをコピーする
 .\Generate-ResourceSummary.ps1
-
 ```
-4. Markdownファイルの確認
-スクリプト実行後、resource_summary_with_check.md というファイルが生成され、各環境ごとのリソース割り当て結果が確認できます。以下は、出力結果の例です。
+結果の確認
+実行後、resource_summary_with_host_details.md という Markdown ファイルが生成され、ホストごとのリソース割り当て表と詳細表が確認できます。
+
+4. 出力例（Markdown形式）
+ホストごとのリソース割り当て表
 
 ```markdownコードをコピーする
-# Kubernetes Resource Summary with Allocation Check
-
-**Check Date:** 2024-09-21 12:34:56
+# Kubernetes Host Resource Allocation Summary
 ```
-| Environment | Service Name | CPU (cores) | Memory (Mi) | Allocation Status |
-|-------------|--------------|-------------|-------------|-------------------|
-| dev         | my-app       | 1.2         | 1024        | OK                |
-| dev         | my-db        | 0.6         | 2048        | OK                |
-| dev (Total) | -            | 1.8         | 3072        | OK                |
-| prod        | my-app       | 3           | 4096        | OK                |
-| prod        | my-db        | 1.5         | 6144        | OK                |
-| prod (Total)| -            | 4.5         | 10240       | OK                |
+| Host   | CPU Allocation (cores) | Memory Allocation (Mi) |
+|--------|------------------------|------------------------|
+| Host-1 | 2.00                   | 1024.00                |
+| Host-2 | 2.00                   | 1024.00                |
+詳細表：ホストごとのネームスペース・サービス割り当て
+
+```markdownコードをコピーする
+# Kubernetes Host Allocation Details
+```
+
+| Host   | Namespace   | Service Name | CPU (cores) | Memory (Mi) |
+|--------|-------------|--------------|-------------|-------------|
+| Host-1 | namespace-1 | my-app       | 1.5         | 512         |
+| Host-2 | namespace-1 | my-app       | 1.5         | 512         |
+| Host-1 | namespace-1 | my-db        | 0.5         | 1024        |
+| Host-2 | namespace-1 | my-db        | 0.5         | 1024        |
+| Host-1 | namespace-2 | my-api       | 2.0         | 2048        |
+| Host-2 | namespace-2 | my-api       | 2.0         | 2048        |
