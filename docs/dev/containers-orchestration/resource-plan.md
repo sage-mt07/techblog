@@ -84,7 +84,7 @@ spec:
 ```
 例: prod/patch.yaml
 
-{```yamlコードをコピーする
+```yamlコードをコピーする
 apiVersion: apps/v1
 kind: Deployment
 metadata:
