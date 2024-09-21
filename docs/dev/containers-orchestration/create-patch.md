@@ -2,10 +2,14 @@
 
 このスクリプトでは、2つのファイルの異なる部分を検出し、dev_diff.yaml と prod_diff.yaml として、それぞれのファイルに含まれる差異を出力します。
 
+Powershell Galleryからpowershell-yamlを取得します。
+```
+install-module powershell-yaml
+```
 PowerShell スクリプト
 ```powershell　コードをコピーする
 # PSYaml モジュールのインポート
-Import-Module PSYaml
+Import-Module powershell-yaml
 
 # YAML ファイルの読み込み
 $devYaml = ConvertFrom-Yaml (Get-Content -Path "dev.yaml" -Raw)
