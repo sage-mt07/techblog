@@ -58,9 +58,13 @@ JSON Path Expression：$.access_token
 HTTP Request Samplerの設定：
 
 URL：https://yourapiurl.com/endpoint
+
 メソッド：GET
+
 HTTP Header Managerの設定：
+
 Authorization: Bearer ${ACCESS_TOKEN}
+
 Content-Type: application/json（必要に応じて変更）
 
 ## 3. スクリプト実行
