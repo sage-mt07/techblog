@@ -1,6 +1,4 @@
 # ブログタイトル: Azure App Service WebJobでPostgreSQLのキャッシュヒット率をAzure Monitorに送信する方法
-はじめに
-
 Azure環境でPostgreSQLを使用している場合、パフォーマンス監視は非常に重要です。特にキャッシュの有効性を監視することは、クエリの効率を測定する上で役立ちます。本記事では、Azure App Service WebJobを利用して、PostgreSQLからキャッシュヒット率を定期的に取得し、それをAzure Monitorにカスタムメトリクスとして送信する方法について解説します。
 
 ## 前提条件
