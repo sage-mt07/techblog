@@ -30,112 +30,180 @@ dotnet add package Azure.Monitor.Query
 ```
 コード例
 以下は、PostgreSQLからキャッシュヒット率を取得し、Azure Monitorにメトリクスを送信するWebJobのコードです。
+Program.cs
+```csharp コードをコピーする
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
+HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+// HttpClientのDI設定
+builder.Services.AddHttpClient();
+
+// Azure MonitorのMetricsClientを設定
+builder.Services.AddSingleton<MetricsClient>(sp =>
+{
+    var credential = new DefaultAzureCredential();
+    return new MetricsClient(credential);
+});
+
+// MyWorkerをサービスとして登録
+builder.Services.AddHostedService<MyWorker>();
+
+var app = builder.Build();
+app.Run();
+
+
+```
+
+MyWorker.cs
 ```csharp コードをコピーする
 using System;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Azure.Monitor.Query;
 using Azure.Identity;
 
-namespace WebJobExample
+public class MyWorker : BackgroundService
 {
-    class Program
+    private readonly int _executionInterval;
+    private readonly string _connectionString;
+    private string _subscriptionId;
+    private string _resourceGroupName;
+    private readonly string _resourceUri;
+    private readonly ILogger<MyWorker> _logger;
+
+    public MyWorker(int executionInterval, string connectionString, ILogger<MyWorker> logger)
     {
-        static async Task Main(string[] args)
+        _executionInterval = executionInterval;
+        _connectionString = connectionString;
+        _logger = logger;
+
+        // Initialize resource identifiers by fetching metadata from IMDS
+        var metadata = GetAzureInstanceMetadataAsync().GetAwaiter().GetResult();
+        _subscriptionId = metadata.subscriptionId;
+        _resourceGroupName = metadata.resourceGroupName;
+
+        // PostgreSQLのサーバー名を接続文字列から抽出し、リソースURIを構築
+        var postgresqlServerName = ExtractServerNameFromConnectionString(_connectionString);
+        if (!string.IsNullOrEmpty(postgresqlServerName))
         {
-            // 環境変数から実行間隔を取得
-            string intervalEnv = Environment.GetEnvironmentVariable("EXECUTION_INTERVAL_SECONDS");
-            int executionInterval = string.IsNullOrEmpty(intervalEnv) ? 60 : int.Parse(intervalEnv);  // デフォルトは60秒
+            _resourceUri = $"/subscriptions/{_subscriptionId}/resourceGroups/{_resourceGroupName}/providers/Microsoft.DBforPostgreSQL/servers/{postgresqlServerName}";
+        }
+        else
+        {
+            _logger.LogError("PostgreSQL server name could not be extracted from the connection string.");
+        }
+    }
 
-            Console.WriteLine($"Execution interval set to {executionInterval} seconds.");
-
-            // PostgreSQL接続情報（環境変数から取得）
-            string connectionString = Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING");
-            string databaseName = Environment.GetEnvironmentVariable("POSTGRESQL_DATABASE_NAME");
-
-            // WebJobの無限ループ
-            while (true)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
             {
-                try
+                // PostgreSQLからキャッシュヒット率を取得
+                double cacheHitRate = await GetPostgreSqlCacheHitRate(_connectionString);
+                _logger.LogInformation($"Cache Hit Rate: {cacheHitRate}%");
+
+                // キャッシュヒット率をAzure Monitorに送信
+                await SendMetricToAzureMonitor(cacheHitRate, _resourceUri);
+
+                // 次の実行まで指定秒数待機
+                _logger.LogInformation($"Waiting for {_executionInterval} seconds before next execution.");
+                await Task.Delay(_executionInterval * 1000, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred during execution.");
+            }
+        }
+    }
+
+    private async Task<double> GetPostgreSqlCacheHitRate(string connectionString)
+    {
+        double cacheHitRate = 0;
+        using (var conn = new NpgsqlConnection(connectionString))
+        {
+            await conn.OpenAsync();
+
+            string query = @"
+                SELECT blks_hit::float / (blks_hit + blks_read) * 100 AS cache_hit_ratio
+                FROM pg_stat_database
+                WHERE datname = current_database()";
+
+            using (var cmd = new NpgsqlCommand(query, conn))
+            {
+                var result = await cmd.ExecuteScalarAsync();
+                if (result != null && result != DBNull.Value)
                 {
-                    // PostgreSQLからキャッシュヒット率を取得
-                    double cacheHitRate = await GetPostgreSqlCacheHitRate(connectionString, databaseName);
-
-                    Console.WriteLine($"Cache Hit Rate: {cacheHitRate}%");
-
-                    // キャッシュヒット率をAzure Monitorに送信
-                    await SendMetricToAzureMonitor(cacheHitRate);
-
-                    // 次の実行まで指定秒数待機
-                    Console.WriteLine($"Waiting for {executionInterval} seconds before next execution.");
-                    Thread.Sleep(executionInterval * 1000);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"An error occurred: {ex.Message}");
+                    cacheHitRate = Convert.ToDouble(result);
                 }
             }
         }
+        return cacheHitRate;
+    }
 
-        // PostgreSQLからキャッシュヒット率を取得する
-        static async Task<double> GetPostgreSqlCacheHitRate(string connectionString, string databaseName)
-        {
-            double cacheHitRate = 0;
+    private async Task SendMetricToAzureMonitor(double cacheHitRate, string resourceUri)
+    {
+        var credential = new DefaultAzureCredential();
+        var monitorClient = new MetricsClient(credential);
 
-            using (var conn = new NpgsqlConnection(connectionString))
+        var metric = new MetricQueryDefinition(
+            "CustomMetrics",
+            new[]
             {
-                await conn.OpenAsync();
-                
-                string query = $@"
-                    SELECT blks_hit::float / (blks_hit + blks_read) * 100 AS cache_hit_ratio
-                    FROM pg_stat_database
-                    WHERE datname = @databaseName";
-
-                using (var cmd = new NpgsqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("databaseName", databaseName);
-
-                    var result = await cmd.ExecuteScalarAsync();
-                    if (result != null && result != DBNull.Value)
+                new MetricQueryTimeSeriesData(
+                    "CacheHitRate",
+                    new MetricQueryTimeSeriesDataPoint
                     {
-                        cacheHitRate = Convert.ToDouble(result);
+                        Average = cacheHitRate
                     }
-                }
+                )
             }
+        );
 
-            return cacheHitRate;
-        }
+        await monitorClient.SendMetricsAsync(resourceUri, metric);
+    }
 
-        // キャッシュヒット率をAzure Monitorに送信する
-        static async Task SendMetricToAzureMonitor(double cacheHitRate)
+    private string ExtractServerNameFromConnectionString(string connectionString)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(connectionString, @"Host=([\w\d\-\.]+)");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    private async Task<(string subscriptionId, string resourceGroupName)> GetAzureInstanceMetadataAsync()
+    {
+        using (HttpClient client = new HttpClient())
         {
-            var credential = new DefaultAzureCredential();
+            client.DefaultRequestHeaders.Add("Metadata", "true");
 
-            var monitorClient = new MetricsClient(credential);
-            var resourceUri = "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>/providers/Microsoft.Web/sites/<app-service-name>";
+            var response = await client.GetAsync("http://169.254.169.254/metadata/instance?api-version=2021-02-01");
 
-            var metric = new MetricQueryDefinition(
-                "CustomMetrics",
-                new[]
-                {
-                    new MetricQueryTimeSeriesData(
-                        "CacheHitRate",
-                        new MetricQueryTimeSeriesDataPoint
-                        {
-                            Average = cacheHitRate
-                        }
-                    )
-                }
-            );
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var document = JsonDocument.Parse(json);
 
-            await monitorClient.SendMetricsAsync(resourceUri, metric);
+                var subscriptionId = document.RootElement.GetProperty("compute").GetProperty("subscriptionId").GetString();
+                var resourceGroupName = document.RootElement.GetProperty("compute").GetProperty("resourceGroupName").GetString();
 
-            Console.WriteLine("Metric sent to Azure Monitor.");
+                return (subscriptionId, resourceGroupName);
+            }
+            else
+            {
+                _logger.LogError("Failed to retrieve Azure instance metadata.");
+                throw new InvalidOperationException("Unable to fetch metadata from Azure Instance Metadata Service.");
+            }
         }
     }
 }
+
 ```
 
 ## ステップ3: 環境変数の設定
@@ -146,22 +214,34 @@ launchSettings.jsonを使用して、ローカルで環境変数を設定でき�
 
 ```json コードをコピーする
 {
-  "profiles": {
-    "WebJobExample": {
-      "commandName": "Project",
-      "environmentVariables": {
-        "EXECUTION_INTERVAL_SECONDS": "60",
-        "POSTGRESQL_CONNECTION_STRING": "Host=my_host;Username=my_user;Password=my_password;Database=my_database",
-        "POSTGRESQL_DATABASE_NAME": "my_database"
-      }
-    }
+  "ExecutionIntervalSeconds": 1,
+  "PostgreSql": {
+    "ServerName": "my-postgresql-server",
+    "DatabaseName": "mydatabase",
+    "Username": "myuser",
+    "Password": "mypassword"
   }
 }
+
+
 ```
 Azure App Serviceでの設定
 
 AzureポータルのApp Serviceの「構成」セクションから、必要な環境変数を設定します。
 
-1. EXECUTION_INTERVAL_SECONDS: 実行間隔（秒）
-1. POSTGRESQL_CONNECTION_STRING: PostgreSQLの接続文字列
-1. POSTGRESQL_DATABASE_NAME: データベース名
+1. ExecutionIntervalSeconds: 実行間隔（秒）
+1. POSTGRESQL__ServerName: PostgreSQLの接続文字列
+1. POSTGRESQL__DatabaseName: PostgreSQLの接続文字列
+1. POSTGRESQL__Username: PostgreSQLの接続文字列
+1. POSTGRESQL__Password: PostgreSQLの接続文字列
+
+## kusto
+kustoを使用する場合、以下のクエリを発行します。
+```
+AzureMetrics
+| where Resource == "MyPostgreSQLServer"
+| where MetricName == "CustomMetrics"
+| where TimeGenerated >= ago(1d)
+| project TimeGenerated, Average
+| order by TimeGenerated desc
+```
