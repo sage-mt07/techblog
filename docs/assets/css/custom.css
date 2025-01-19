@@ -1,0 +1,35 @@
+/* main/docs/assets/css/custom.css */
+
+/* 見出しのスタイル */
+body h1 {
+  font-size: 2.5em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+  color: #2c3e50;
+}
+
+body h2 {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+  color: #34495e;
+}
+
+/* コードブロックのスタイル */
+body pre {
+  background-color: #f4f4f4;
+  padding: 15px;
+  border-radius: 5px;
+  overflow: auto;
+  margin: 1em 0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.95em;
+}
+
+body code {
+  background-color: #f4f4f4;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.95em;
+}
