@@ -1,3 +1,8 @@
+---
+layout: default
+title: "dockerfileの文字置換"
+category: "dotnet develop"
+---
 # .NET 8 WebAPIでAPIごとにタイムアウトを設定する方法
 
 .NET 8でWebAPIを開発する際に、特定のAPIにタイムアウトを設定し、指定された秒数内に処理が完了しなかった場合にタイムアウトエラーを返す方法をご紹介します。本記事では、タイムアウトを簡単に設定できるようにカスタム属性 (Attribute) を使用し、各APIごとに異なるタイムアウト時間を指定する方法を解説します。
