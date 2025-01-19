@@ -1,3 +1,8 @@
+---
+layout: default
+title: "負荷試験のためのログ収集からk6への展開"
+category: test monitoring"
+---
 # 負荷試験のためのログ収集からk6への展開
 
 net8でホストしているREST関する仕組みづくり
