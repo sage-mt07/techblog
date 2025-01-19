@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "PAGE-TITLE"
-permalink: /URL-PATH
+title: ".NET 8から.NET Framework 4.5.1のCOMコンポーネントを利用する方法"
+category: "dotnet develop"
 ---
 # .NET 8から.NET Framework 4.5.1のCOMコンポーネントを利用する方法
 
