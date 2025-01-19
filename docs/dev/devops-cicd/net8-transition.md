@@ -1,3 +1,8 @@
+---
+layout: default
+title: ".NET 6 から .NET 8 への移行とAzure DevOpsパイプラインの最適化"
+category: "dev ci/cd"
+---
 # 概要資料: .NET 6 から .NET 8 への移行とAzure DevOpsパイプラインの最適化
 
 目次
