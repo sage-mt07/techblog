@@ -14,21 +14,10 @@
 
 </head>
 <body>
-  <!-- デバッグ用: page.home の値を表示 -->
+  {{ content }}
 
   {% if page.home %}
-    <h2>以下のページをご覧ください：</h2>
-    {% assign dev_pages = site.pages | where_exp: "page", "page.url contains '/dev/' " %}
-    {% assign grouped = dev_pages | group_by: "category" %}
-
-    {% for group in grouped %}
-      <h3>{{ group.name }}</h3>
-      <ul>
-        {% for page in group.items %}
-          <li><a href="{{ page.url | relative_url }}">{{ page.title }}</a></li>
-        {% endfor %}
-      </ul>
-    {% endfor %}
+    <!-- ページリストは index.md に記述 -->
   {% endif %}
    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 
