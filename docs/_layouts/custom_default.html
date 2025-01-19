@@ -11,7 +11,8 @@
 </head>
 <body>
   {{ content }}
-
+  <!-- デバッグ用: page.home の値を表示 -->
+  <p>Home: {{ page.home }}</p>
   {% if page.home %}
     <h2>以下のページをご覧ください：</h2>
     {% assign dev_pages = site.pages | where_exp: "page", "page.url contains '/dev/' and page.title" %}
