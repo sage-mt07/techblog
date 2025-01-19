@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Kubernetes環境でのgRPC通信エラーへの対策 ～ HttpClientの効率的な再作成戦略～"
+category: "Containers Orchestration"
+---
 # Kubernetes環境でのgRPC通信エラーへの対策 ～ HttpClientの効率的な再作成戦略～
 
 # 1. 背景
