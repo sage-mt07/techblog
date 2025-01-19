@@ -33,3 +33,34 @@ body code {
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.95em;
 }
+.accordion details {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+}
+
+/* サマリー（カテゴリ名）のスタイル */
+.accordion summary {
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  list-style: none;
+  outline: none;
+}
+
+/* サマリーが開いているときのスタイル */
+.accordion details[open] summary {
+  color: #2c3e50;
+}
+
+/* リストアイテムのスタイル */
+.accordion ul {
+  margin-top: 10px;
+  padding-left: 20px;
+}
+
+.accordion li {
+  margin-bottom: 5px;
+}
