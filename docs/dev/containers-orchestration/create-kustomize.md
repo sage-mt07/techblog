@@ -1,3 +1,8 @@
+---
+layout: default
+title: "PythonでKustomize用のkustomization.yamlに2つのYAMLファイルの差分を出力する方法"
+category: "Containers Orchestration"
+---
 # PythonでKustomize用のkustomization.yamlに2つのYAMLファイルの差分を出力する方法
 Kubernetesを使用していると、異なる環境や設定ファイル間での差分を管理したいケースがよくあります。Kustomizeは、複数のYAMLファイルを管理し、必要に応じてカスタマイズできる強力なツールですが、時にはファイル間の違いを明確にし、どこが変更されたかを把握したい場合があります。
 
