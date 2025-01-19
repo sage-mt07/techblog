@@ -8,7 +8,7 @@
   <title>{{ page.title }} | {{ site.title }}</title>
 
   {% include custom_styles.html %}
-  /* main/docs/assets/css/custom.css */
+
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -42,7 +42,7 @@ pre {
 </head>
 <body>
   <!-- デバッグ用: page.home の値を表示 -->
-  <p>Home: {{ page.home }}</p>
+
   {% if page.home %}
     <h2>以下のページをご覧ください：</h2>
     {% assign dev_pages = site.pages | where_exp: "page", "page.url contains '/dev/' " %}
