@@ -1,4 +1,9 @@
-# Roslynを利用例 
+---
+layout: default
+title: "Roslyn利用例 "
+category: "dotnet develop"
+---
+# Roslyn利用例 
 Roslynを利用して、ExecuteAsyncやQueryAsyncメソッドを呼び出しているクラスやメソッドの名前を表示する方法を以下に示します。このコードでは、各メソッドがどのクラス内で、どのメソッドから呼び出されているかを解析します。
 
 ## 1. Roslynを使ったコードの実装
