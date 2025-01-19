@@ -13,6 +13,7 @@ home: true
   {% assign grouped = dev_pages | group_by: 'category' %}
   
   {% for group in grouped %}
+      {% if group.name and group.items.size > 0 %}
   <details>
   <summary>{{ group.name }} <span class="count">({{ group.items | size }})</span></summary>
 
@@ -22,6 +23,7 @@ home: true
       {% endfor %}
     </ul>
     </details>
+        {% endif %}
   {% endfor %}
    <!-- About ページの手動追加 -->
   <details>
