@@ -14,11 +14,16 @@
 
 </head>
 <body>
+    <nav>
+    <ul>
+      <li><a href="{{ site.baseurl }}/">ホーム</a></li>
+      <li><a href="{{ site.baseurl }}/about">About</a></li>
+      <!-- 他のリンクがあればここに追加 -->
+    </ul>
+  </nav>
   {{ content }}
 
-  {% if page.home %}
-    <!-- ページリストは index.md に記述 -->
-  {% endif %}
+
    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   <script src="{{ site.baseurl }}/assets/js/accordion.js"></script>
 </body>
