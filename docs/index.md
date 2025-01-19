@@ -9,8 +9,8 @@ title: ホーム
 
 <ul>
 {% for page in site.pages %}
-  {% unless page.title == site.title %}
+  {% if page.title and page.url != '/' and page.url contains 'assets' == false and page.url contains 'dev' == false %}
     <li><a href="{{ page.url }}">{{ page.title }}</a></li>
-  {% endunless %}
+  {% endif %}
 {% endfor %}
 </ul>
