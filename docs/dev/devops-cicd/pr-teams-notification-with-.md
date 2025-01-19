@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Azure DevOpsでPull Request作成時にTeams通知を送る方法【承認者も通知】"
+category: "dev ci/cd"
+---
 # Azure DevOpsでPull Request作成時にTeams通知を送る方法【承認者も通知】
 
 Azure DevOpsでPull Request（PR）が作成された際、チームメンバーに即座に通知が届くように設定したい場合があります。特に、PRの承認者を含む通知を送ることで、スムーズな承認プロセスを促進できます。今回は、Azure FunctionsやLogic Appsを使わず、Azure DevOpsのService HooksとMicrosoft TeamsのWebhookを利用して、このプロセスを実現する方法を紹介します。
