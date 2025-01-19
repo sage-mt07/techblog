@@ -1,5 +1,11 @@
+title: "techblog"
+baseurl: "/techblog"
 remote_theme: jekyll/minima@v2.5.1
 plugins:
 - jekyll-remote-theme # add this line to the plugins list if you already have one
-css:
-  - /assets/css/custom.css
+permalink: pretty
+
+collections:
+  dev_pages:
+    output: true
+    permalink: /techblog/:collection/:path/
