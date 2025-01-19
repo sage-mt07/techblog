@@ -1,3 +1,7 @@
+---
+title: "k8s : サービスの依存関係をもとに起動順を制御する方法"
+---
+
 # C:\RELEASE フォルダ内のすべての .yaml ファイルを取得
 $releaseFolder = "C:\RELEASE"
 $yamlFiles = Get-ChildItem -Path $releaseFolder -Filter *.yaml
