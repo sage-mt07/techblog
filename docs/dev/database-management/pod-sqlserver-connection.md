@@ -1,4 +1,9 @@
-KubernetesのPodからSQL Server 2008 R2に接続する方法
+---
+layout: default
+title: " KubernetesのPodからSQL Server 2008 R2に接続する方法"
+category: "Containers Orchestration"
+---
+# KubernetesのPodからSQL Server 2008 R2に接続する方法
 SQL Server 2008 R2に接続するためには、古いTLSバージョンの使用を許可するように、openssl.cnfファイルを編集する必要があります。Pod内でこのファイルを更新するために、Dockerfileに編集コマンドを設定します。以下に、その手順を説明します。
 
 Dockerfileでopenssl.cnfファイルを編集する手順
