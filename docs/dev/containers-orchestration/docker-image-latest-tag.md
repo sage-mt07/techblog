@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Azure DevOps パイプラインで Docker イメージの最新タグを自動設定する方法"
+category: "Containers Orchestration"
+---
 # Azure DevOps パイプラインで Docker イメージの最新タグを自動設定する方法
 
 Azure DevOps パイプラインを使用して、Azure App Service にコンテナベースのアプリケーションをデプロイする際、Docker イメージのタグを常に最新に保つ方法について紹介します。
