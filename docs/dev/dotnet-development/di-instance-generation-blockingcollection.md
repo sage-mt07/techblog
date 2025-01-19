@@ -1,3 +1,8 @@
+---
+layout: default
+title: ".NET における DI を使った任意のタイミングでのインスタンス生成と BlockingCollection の共有"
+category: "dotnet develop"
+---
 # .NET における DI を使った任意のタイミングでのインスタンス生成と BlockingCollection の共有
 
 概要
