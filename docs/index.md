@@ -9,7 +9,7 @@ home: true
 <div class="accordion">
 
   
-  {% assign dev_pages = site.pages | where_exp: 'page', 'page.url contains "/dev/" ' %}
+  {% assign dev_pages = site.pages | where_exp: 'page', 'page.url contains "/dev/" and page.title != ""' %}
   {% assign grouped = dev_pages | group_by: 'category' %}
   
   {% for group in grouped %}
