@@ -1,3 +1,8 @@
+---
+layout: default
+title: "NET 8 から aspnet_regiis で暗号化した app.config を COM を利用して読み取る方法"
+category: "dotnet develop"
+---
 # NET 8 から aspnet_regiis で暗号化した app.config を COM を利用して読み取る方法
 ## 1. 暗号化された app.config ファイルの準備
 まず、aspnet_regiis を使用して app.config の特定のセクションを暗号化します。例えば、connectionStrings セクションを暗号化する場合は、次のようにコマンドを実行します。
