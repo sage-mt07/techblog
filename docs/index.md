@@ -7,14 +7,11 @@ home: true
 
 以下のページをご覧ください：
 
-{% assign dev_pages = site.pages | where_exp: "page", "page.url contains '/dev/' and page.title" %}
-{% assign grouped = dev_pages | group_by: "category" %}
-
-{% for group in grouped %}
-  <h2>{{ group.name }}</h2>
-  <ul>
-    {% for page in group.items %}
+{% for page in site.pages %}
+  {% if page.title and page.url != '/' and page.url != '/URL-PATH' %}
+    {% unless page.url contains 'assets'  %}
       <li><a href="{{ page.url | relative_url }}">{{ page.title }}</a></li>
-    {% endfor %}
-  </ul>
+    {% endunless %}
+  {% endif %}
 {% endfor %}
+</ul>
