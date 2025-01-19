@@ -1,3 +1,8 @@
+---
+layout: default
+title: "DIを使用したプロジェクトにおける InternalsVisibleTo とフェイククラスを利用したUnitTestの方法"
+category: "dotnet develop"
+---
 # DIを使用したプロジェクトにおける InternalsVisibleTo とフェイククラスを利用したUnitTestの方法
 C#の依存性注入（DI）を用いたプロジェクトでは、internal クラスをユニットテストする際にアクセスが制限されているため、テストが難しくなることがあります。これを解決するための一般的な手法として、以下の2つがあります。
 
