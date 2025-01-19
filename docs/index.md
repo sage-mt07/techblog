@@ -6,19 +6,27 @@ home: true
 # Techblog v
 
 以下のページをご覧ください：
+<div class="accordion">
 
-<details>
-  <summary>ページ一覧を表示／非表示</summary>
   
   {% assign dev_pages = site.pages | where_exp: 'page', 'page.url contains "/dev/" ' %}
   {% assign grouped = dev_pages | group_by: 'category' %}
   
   {% for group in grouped %}
-    <h3>{{ group.name }}</h3>
+  <details>
+  <summary>{{ group.name }}</summary>
     <ul>
       {% for page in group.items %}
         <li><a href="{{ page.url | relative_url }}">{{ page.title }}</a></li>
       {% endfor %}
     </ul>
+    </details>
   {% endfor %}
-</details>
+   <!-- About ページの手動追加 -->
+  <details>
+    <summary>About</summary>
+    <ul>
+      <li><a href="{{ site.baseurl }}/about">自己紹介ページ</a></li>
+    </ul>
+  </details>
+</div>
