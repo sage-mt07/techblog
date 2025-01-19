@@ -1,3 +1,9 @@
+---
+layout: default
+title: "table rowcount出力"
+category: "database management"
+---
+
 # SQLServer table rowcount
 
 ```
