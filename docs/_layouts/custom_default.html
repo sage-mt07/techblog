@@ -46,7 +46,7 @@ pre {
   <p>Home: {{ page.home }}</p>
   {% if page.home %}
     <h2>以下のページをご覧ください：</h2>
-    {% assign dev_pages = site.pages | where_exp: "page", "page.url contains '/dev/' and page.title" %}
+    {% assign dev_pages = site.pages | where_exp: "page", "page.url contains '/dev/' and page.title != ''" %}
     {% assign grouped = dev_pages | group_by: "category" %}
 
     {% for group in grouped %}
