@@ -1,3 +1,8 @@
+---
+layout: default
+title: "DatadogとJMeterを活用したAPI負荷テストのログ収集とシナリオ作成"
+category: "test monitoring"
+---
 # DatadogとJMeterを活用したAPI負荷テストのログ収集とシナリオ作成
 
 APIのパフォーマンステストは、ユーザーの実際の動作を再現することが鍵となります。本記事では、.NET 8とKubernetes上でホストされたREST APIのリクエストとレスポンスをDatadogにログとして記録し、JMeterを用いた負荷テストシナリオの作成方法について解説します。
