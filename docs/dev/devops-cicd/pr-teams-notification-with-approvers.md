@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Azure DevOpsでPull Request作成時に承認者を含むTeams通知を送る方法"
+category: "dev ci/cd"
+---
 # Azure DevOpsでPull Request作成時に承認者を含むTeams通知を送る方法
 
 はじめに
