@@ -8,14 +8,17 @@ home: true
 以下のページをご覧ください：
 
 <details>
-  <summary style="font-size: 1.2em; cursor: pointer;">📄 ページ一覧を表示/非表示</summary>
-  <ul>
-    {% for page in site.pages %}
-      {% if page.title and page.url != '/' and page.url != '/URL-PATH' %}
-        {% unless page.url contains 'assets' %}
-          <li><a href="{{ page.url | relative_url }}">{{ page.title }}</a></li>
-        {% endunless %}
-      {% endif %}
-    {% endfor %}
-  </ul>
+  <summary>ページ一覧を表示／非表示</summary>
+  
+  {% assign dev_pages = site.pages | where_exp: 'page', 'page.url contains "/dev/" ' %}
+  {% assign grouped = dev_pages | group_by: 'category' %}
+  
+  {% for group in grouped %}
+    <h3>{{ group.name }}</h3>
+    <ul>
+      {% for page in group.items %}
+        <li><a href="{{ page.url | relative_url }}">{{ page.title }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
 </details>
