@@ -1,3 +1,9 @@
+---
+layout: default
+title: ".NET 8 で Kafka メッセージを読み取り、DB へ登録するサービスを Kubernetes 上で運用する方法"
+category: "Containers Orchestration"
+---
+
 # .NET 8 で Kafka メッセージを読み取り、DB へ登録するサービスを Kubernetes 上で運用する方法
 はじめに
 .NET 8 では、Startup.cs が廃止され、アプリケーション設定はすべて Program.cs に統一されました。本記事では、Kafka からメッセージを受信し、Dapper を使用してストアドプロシージャを介してデータベースに登録するサービスを .NET 8 で構築し、Kubernetes 上で運用する方法を解説します。さらに、ポート設定やヘルスチェックの実装についても紹介します。
