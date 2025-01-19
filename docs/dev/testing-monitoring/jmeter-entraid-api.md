@@ -1,7 +1,7 @@
 ---
 layout: default
 title: " Entra IDを利用したWebAPIの負荷試験をJMeterで行う方法"
-category: test monitoring"
+category: "test monitoring"
 ---
 # Entra IDを利用したWebAPIの負荷試験をJMeterで行う方法
 今回は、Azure Entra IDを使った認証を必要とするWebAPIに対して、JMeterを使用して負荷試験を行う方法をご紹介します。JMeterを用いて、特定のクライアント専用の認証トークンを自動的に取得し、異なるユーザーごとに同時実行でAPIリクエストを行うシナリオを構築します。
