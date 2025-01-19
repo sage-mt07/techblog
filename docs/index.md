@@ -3,7 +3,7 @@ layout: custom_default
 title: ホーム
 ---
 
-# Techblog１２３
+# Techblog
 
 以下のページをご覧ください：
 
