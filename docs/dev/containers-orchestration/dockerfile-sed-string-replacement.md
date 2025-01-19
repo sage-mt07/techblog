@@ -1,3 +1,9 @@
+---
+layout: default
+title: "dockerfileの文字置換"
+category: "Containers Orchestration"
+---
+# dockerfileの文字置換
 sed を使った文字列の置き換えや追加は、Dockerfile内でも同様に使用可能です。ただし、Dockerfileの書き方に適応させる必要があります。Dockerfileでは、RUN コマンドを使ってシェルスクリプトのようなコマンドを実行します。
 
 以下は、Dockerfileの中でsedを使ってファイルの内容を置き換え、必要なら追加する例です。
