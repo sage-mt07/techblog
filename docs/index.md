@@ -14,7 +14,8 @@ home: true
   
   {% for group in grouped %}
   <details>
-  <summary>{{ group.name }}</summary>
+  <summary>{{ group.name }} <span class="count">({{ group.items | size }})</span></summary>
+
     <ul>
       {% for page in group.items %}
         <li><a href="{{ page.url | relative_url }}">{{ page.title }}</a></li>
