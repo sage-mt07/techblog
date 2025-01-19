@@ -1,3 +1,8 @@
+---
+layout: default
+title: "ASP.NET レジストリに関連する暗号化キーの一覧を取得する方法"
+category: "dotnet develop"
+---
 # ASP.NET レジストリに関連する暗号化キーの一覧を取得する方法
 
 ## 前提
