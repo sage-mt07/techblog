@@ -1,3 +1,8 @@
+---
+layout: default
+title: "BackgroundServiceを継承せずに.NET 8でIHostedServiceを実装する"
+category: "dotnet develop"
+---
 # BackgroundServiceを継承せずに.NET 8でIHostedServiceを実装する
 このブログでは、.NET 8でBackgroundServiceを継承せずにIHostedServiceを使ってバックグラウンドタスクを実装する方法について解説します。BackgroundServiceを使用しないことで、サービスのライフサイクルに対する柔軟な制御が可能になり、特定のニーズに応じたカスタマイズができます。
 
