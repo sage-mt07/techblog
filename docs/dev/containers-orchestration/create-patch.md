@@ -1,3 +1,8 @@
+---
+layout: default
+title: "2つの YAML ファイル間の差分を比較し、異なる部分を抽出（PowerShell版）"
+category: "Containers Orchestration"
+---
 # 2つの YAML ファイル間の差分を比較し、異なる部分を抽出（PowerShell版）
 
 このスクリプトでは、2つのファイルの異なる部分を検出し、dev_diff.yaml と prod_diff.yaml として、それぞれのファイルに含まれる差異を出力します。
