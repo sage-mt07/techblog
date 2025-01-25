@@ -9,3 +9,7 @@ collections:
   dev_pages:
     output: true
     permalink: /:collection/:path/
+
+highlight:
+  highlighter: rouge
+  theme: github
