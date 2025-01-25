@@ -7,33 +7,29 @@ category: "KAFKA"
 # KSQL（ksqlDB）の概要
 **KSQL（現在はksqlDBと呼ばれる）**は、Apache Kafka上でリアルタイムのストリーム処理を容易にするためのストリームクエリ言語です。SQLライクな構文を使用して、データストリームのフィルタリング、変換、集約、結合などの操作を直感的に行うことができます。主な特徴は以下の通りです：
 
-    リアルタイム処理：データがKafkaトピックに流れると同時に処理が行われます。
-    スキーマサポート：Avro、JSON、Protobufなどのスキーマをサポートし、データの構造を明確に定義できます。
-    インタラクティブなクエリ：CLIやREST APIを通じてインタラクティブにクエリを実行できます。
-    スケーラビリティ：Kafkaクラスタと同様に、ksqlDBも水平スケーリングが可能です。
-    KSQLを使用するためのインフラ構成と設定
-    KSQL（ksqlDB）を利用するためには、以下のインフラ構成と設定が必要です：
+1. リアルタイム処理：データがKafkaトピックに流れると同時に処理が行われます。
+1. キーマサポート：Avro、JSON、Protobufなどのスキーマをサポートし、データの構造を明確に定義できます。
+1. ラクティブなクエリ：CLIやREST APIを通じてインタラクティブにクエリを実行できます。
+1. スケリティ：Kafkaクラスタと同様に、ksqlDBも水平スケーリングが可能です。
+1. KSQL使用するためのインフラ構成と設定
+KSQL（ksqlDB）を利用するためには、以下のインフラ構成と設定が必要です：
 
 1. Apache Kafka クラスター：
-
-Kafkaブローカー、ZooKeeper（またはKafkaの最新バージョンではKRaftモード）を含む基本的なKafkaインフラが必要です。
+    Kafkaブローカー、ZooKeeper（またはKafkaの最新バージョンではKRaftモード）を含む基本的なKafkaインフラが必要です。
 2. ksqlDB サーバー：
-
-ksqlDBサーバーをデプロイします。これはクエリを実行し、Kafkaと連携してデータストリームを処理します。
-必要に応じて、複数のksqlDBサーバーをクラスタリングして高可用性とスケーラビリティを確保します。
+    ksqlDBサーバーをデプロイします。これはクエリを実行し、Kafkaと連携してデータストリームを処理します。
+   必要に応じて、複数のksqlDBサーバーをクラスタリングして高可用性とスケーラビリティを確保します。
 3. 設定：
-
-ksql-server.properties ファイルでKafkaブローカーのアドレス、ストリームストレージの場所、リソース設定などを定義します。
-必要に応じて、セキュリティ（SSL/TLS、認証、認可）や監視（JMX、Prometheusなど）の設定も行います。
+    ksql-server.properties ファイルでKafkaブローカーのアドレス、ストリームストレージの場所、リソース設定などを定義します。
+    必要に応じて、セキュリティ（SSL/TLS、認証、認可）や監視（JMX、Prometheusなど）の設定も行います。
 4. クライアントツール：
+    ksqlDB CLI、REST API、またはKafka Connectなどのツールを使用して、ksqlDBと対話します。
+    例：ksqlDBサーバーの基本的な起動コマンド
 
-ksqlDB CLI、REST API、またはKafka Connectなどのツールを使用して、ksqlDBと対話します。
-例：ksqlDBサーバーの基本的な起動コマンド
-
-bash
-``` 
-ksql-server-start /etc/ksql/ksql-server.properties
-``` 
+    bash
+    ``` 
+    ksql-server-start /etc/ksql/ksql-server.properties
+    ``` 
 ## KSQLに必要なクエリとトピックの関係
 KSQL（ksqlDB）では、クエリとKafkaトピックは密接に関連しています。主な関係は以下の通りです：
 
