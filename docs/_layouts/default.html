@@ -41,6 +41,37 @@ code {
   {% include custom_styles.html %}
 </head>
 <body>
+{% raw %}
+{% assign headings = content | split: '<h' %}
+{% if headings.size > 1 %}
+  {% assign heading_list = "" | split: "" %}
+  {% for heading in headings %}
+    {% if heading contains '>' %}
+      {% assign heading_tag = heading | split: '>' | first | replace: '<', '' | strip %}
+      {% assign heading_text = heading | split: '>' | last | split: '</h' | first | strip %}
+      {% if heading_text != "" %}
+        {% assign heading_id = heading_text | downcase | replace: ' ', '-' %}
+          <h{{ heading_tag }} id="{{ heading_id }}">
+              <a href="#{{ heading_id }}" class="header-anchor">#</a>{{ heading_text }}
+          </h{{ heading_tag }}>
+        {% assign heading_list = heading_list | push: heading_id %}
+      {% else %}
+         <h{{ heading_tag }}>{{ heading_text }} </h{{ heading_tag }}>
+      {% endif %}
+    {% else %}
+      {{ heading }}
+    {% endif %}
+  {% endfor %}
+  <div class="toc">
+    <ul>
+    {% for heading_id in heading_list %}
+       <li> <a href="#{{heading_id}}"> {{heading_id}}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+{% else %}
   {{ content }}
+{% endif %}
+{% endraw %}
 </body>
 </html>
