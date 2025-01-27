@@ -113,7 +113,8 @@ MyProject/
 ```
 csprojファイルに以下のように記述して、LinkerConfig.xml をビルド時に適用します。
 
-```xml コードをコピーする
+```xml
+
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -130,7 +131,7 @@ csprojファイルに以下のように記述して、LinkerConfig.xml をビル
 LinkerConfig.xml の内容例
 LinkerConfig.xml ファイル内で、トリミング対象となるクラスやアセンブリを指定します。以下は、特定のクラスがトリミングされないように設定する例です。
 
-```xmlコードをコピーする
+```xml
 <linker>
   <assembly fullname="MyReferencedAssembly">
     <type fullname="MyReferencedClass" preserve="all"/>
