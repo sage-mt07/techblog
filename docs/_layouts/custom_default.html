@@ -21,7 +21,14 @@
       <!-- 他のリンクがあればここに追加 -->
     </ul>
   </nav>
-  {{ content }}
+    <main>
+        <section class="article-list">
+            {{ content }}
+        </section>
+    </main>
+    <footer>
+        <p>&copy; {{ site.time | date: "%Y" }} {{ site.title }}. All rights reserved.</p>
+    </footer>
 
 
    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
