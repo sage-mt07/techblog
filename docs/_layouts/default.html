@@ -41,7 +41,7 @@ code {
   {% include custom_styles.html %}
 </head>
 <body>
-  {% raw %}
+
   {% assign headings = content | split: '<h' %}
   {% if headings.size > 1 %}
     {% assign heading_list = "" | split: "" %}
@@ -72,6 +72,6 @@ code {
   {% else %}
     {{ content }}
   {% endif %}
-  {% endraw %}
+
 </body>
 </html>
