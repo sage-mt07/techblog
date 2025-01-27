@@ -44,8 +44,8 @@ public class CustomAttribute : Attribute
 
 ## 解決策2: [RequiresUnreferencedCode] で警告を表示する
 リフレクションを使用するコードがトリミングの影響を受ける可能性がある場合は、[RequiresUnreferencedCode] 属性を付与して、リフレクションを利用していることを警告することができます。これにより、利用者がリフレクションが使われている箇所を認識し、トリミングによるリスクを理解できるようになります。
-
-```実装例 csharp
+実装例 
+```csharp
 コードをコピーする
 using System;
 using System.Diagnostics.CodeAnalysis;
